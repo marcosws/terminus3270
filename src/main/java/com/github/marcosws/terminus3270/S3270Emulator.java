@@ -649,5 +649,105 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
     public void onClose() {
         this.closeViewer();
     }
+    
+    @Override
+    protected void handleSendTextFromViewer(String field, String text, String direction) {
+        logger.info("Viewer SendText → field='{}', text='{}', direction='{}'", field, text, direction);
+
+        switch (direction) {
+            case "Right Field":
+                sendTextByField(field, text);
+                break;
+            case "Left Field":
+                sendTextByField(field, text, 0, -1);
+                break;
+            case "Top Field":
+                sendTextByField(field, text, -1, 0);
+                break;
+            case "Botton Field":
+                sendTextByField(field, text, 1, 0);
+                break;
+            default:
+                sendTextByField(field, text);
+        }
+    }
+
+    @Override
+    protected String handleGetTextFromViewer(String field, int size, String direction) {
+        logger.info("Viewer GetText → field='{}', size={}, direction='{}'", field, size, direction);
+
+        switch (direction) {
+            case "Right Field":
+                return getTextByField(field, size);
+
+            case "Left Field":
+                return getTextBeforeField(field, size);
+
+            case "Top Field":
+                return getTextTopField(field, size, 1);   // 1 linha acima
+
+            case "Botton Field":
+                return getTextBottonField(field, size, 1); // 1 linha abaixo
+
+            default:
+                return getTextByField(field, size);
+        }
+    }
+    
+    @Override
+    protected void handleKeyFromViewer(String keyName) {
+        logger.info("Viewer key pressed: {}", keyName);
+        setStatus("Sending " + keyName + "...");
+
+        switch (keyName) {
+            case "Enter"       : enter();
+            case "Tab"         : tab();
+            case "Home"        : home();
+            case "Backspace"   : backspace();
+            case "Clear"       : clear();
+            case "Reset"       : reset();
+            case "DeleteField" : deleteField();
+            case "EraseEOF"    : eraseEOF();
+            case "EraseInput"  : eraseInput();
+
+            // PF1 .. PF24
+            case "PF1"  : pressPF(PFKey.PF1);
+            case "PF2"  : pressPF(PFKey.PF2);
+            case "PF3"  : pressPF(PFKey.PF3);
+            case "PF4"  : pressPF(PFKey.PF4);
+            case "PF5"  : pressPF(PFKey.PF5);
+            case "PF6"  : pressPF(PFKey.PF6);
+            case "PF7"  : pressPF(PFKey.PF7);
+            case "PF8"  : pressPF(PFKey.PF8);
+            case "PF9"  : pressPF(PFKey.PF9);
+            case "PF10" : pressPF(PFKey.PF10);
+            case "PF11" : pressPF(PFKey.PF11);
+            case "PF12" : pressPF(PFKey.PF12);
+            case "PF13" : pressPF(PFKey.PF13);
+            case "PF14" : pressPF(PFKey.PF14);
+            case "PF15" : pressPF(PFKey.PF15);
+            case "PF16" : pressPF(PFKey.PF16);
+            case "PF17" : pressPF(PFKey.PF17);
+            case "PF18" : pressPF(PFKey.PF18);
+            case "PF19" : pressPF(PFKey.PF19);
+            case "PF20" : pressPF(PFKey.PF20);
+            case "PF21" : pressPF(PFKey.PF21);
+            case "PF22" : pressPF(PFKey.PF22);
+            case "PF23" : pressPF(PFKey.PF23);
+            case "PF24" : pressPF(PFKey.PF24);
+
+            // PA1 .. PA3
+            case "PA1" : pressPA(PAKey.PA1);
+            case "PA2" : pressPA(PAKey.PA2);
+            case "PA3" : pressPA(PAKey.PA3);
+
+            default : {
+                logger.warn("Unknown key from viewer: {}", keyName);
+                setStatus("Unknown key: " + keyName);
+            }
+        }
+
+        setStatus(keyName + " sent");
+    }
 
 }

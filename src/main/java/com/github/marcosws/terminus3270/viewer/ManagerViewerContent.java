@@ -27,9 +27,30 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	
 	protected void showViewer() {
 		if (emulatorMode == EmulatorMode.VIEWER_MODE) {
-			terminalViewer = new TerminalViewer(this::continueScreen);
+			terminalViewer = new TerminalViewer(this::continueScreen,
+					                            this::handleSendTextFromViewer,
+					                            this::handleGetTextFromViewer,
+					                            this::handleKeyFromViewer);
 			terminalViewer.show();
+			setStatus("Viewer ready");
 		}
+	}
+	
+	/**
+	 * Método chamado pelo botão "Send Text" do TerminalViewer.
+	 * Deve ser sobrescrito ou implementado pela classe filha (S3270Emulator).
+	 */
+	protected void handleSendTextFromViewer(String field, String text, String direction) {
+	    // implementação padrão vazia – a classe filha sobrescreve
+	}
+	
+	/** Chamado pelo botão Get Text – deve retornar o valor lido */
+	protected String handleGetTextFromViewer(String field, int size, String direction) {
+	    return ""; // sobrescrito no S3270Emulator
+	}
+	
+	protected void handleKeyFromViewer(String keyName) {
+	    // sobrescrito no S3270Emulator
 	}
 	
 	protected final void pauseScreenViewer() {
@@ -91,6 +112,12 @@ public abstract class ManagerViewerContent implements IScreenContent {
 			terminalViewer.close();
 			terminalViewer = null;
 		}
+	}
+	
+	protected void setStatus(String message) {
+	    if (terminalViewer != null) {
+	        terminalViewer.setStatus(message);
+	    }
 	}
 	
 
