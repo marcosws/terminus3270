@@ -706,46 +706,46 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
         setStatus("Sending " + keyName + "...");
 
         switch (keyName) {
-            case "Enter"       : enter();
-            case "Tab"         : tab();
-            case "Home"        : home();
-            case "Backspace"   : backspace();
-            case "Clear"       : clear();
-            case "Reset"       : reset();
-            case "DeleteField" : deleteField();
-            case "EraseEOF"    : eraseEOF();
-            case "EraseInput"  : eraseInput();
+            case "Enter"       : enter(); break;
+            case "Tab"         : tab(); break;
+            case "Home"        : home(); break;
+            case "Backspace"   : backspace(); break;
+            case "Clear"       : clear(); break;
+            case "Reset"       : reset(); break;
+            case "DeleteField" : deleteField(); break;
+            case "EraseEOF"    : eraseEOF(); break;
+            case "EraseInput"  : eraseInput(); break;
 
             // PF1 .. PF24
-            case "PF1"  : pressPF(PFKey.PF1);
-            case "PF2"  : pressPF(PFKey.PF2);
-            case "PF3"  : pressPF(PFKey.PF3);
-            case "PF4"  : pressPF(PFKey.PF4);
-            case "PF5"  : pressPF(PFKey.PF5);
-            case "PF6"  : pressPF(PFKey.PF6);
-            case "PF7"  : pressPF(PFKey.PF7);
-            case "PF8"  : pressPF(PFKey.PF8);
-            case "PF9"  : pressPF(PFKey.PF9);
-            case "PF10" : pressPF(PFKey.PF10);
-            case "PF11" : pressPF(PFKey.PF11);
-            case "PF12" : pressPF(PFKey.PF12);
-            case "PF13" : pressPF(PFKey.PF13);
-            case "PF14" : pressPF(PFKey.PF14);
-            case "PF15" : pressPF(PFKey.PF15);
-            case "PF16" : pressPF(PFKey.PF16);
-            case "PF17" : pressPF(PFKey.PF17);
-            case "PF18" : pressPF(PFKey.PF18);
-            case "PF19" : pressPF(PFKey.PF19);
-            case "PF20" : pressPF(PFKey.PF20);
-            case "PF21" : pressPF(PFKey.PF21);
-            case "PF22" : pressPF(PFKey.PF22);
-            case "PF23" : pressPF(PFKey.PF23);
-            case "PF24" : pressPF(PFKey.PF24);
+            case "PF1"  : pressPF(PFKey.PF1); break;
+            case "PF2"  : pressPF(PFKey.PF2); break;
+            case "PF3"  : pressPF(PFKey.PF3); break;
+            case "PF4"  : pressPF(PFKey.PF4); break;
+            case "PF5"  : pressPF(PFKey.PF5); break;
+            case "PF6"  : pressPF(PFKey.PF6); break;
+            case "PF7"  : pressPF(PFKey.PF7); break;
+            case "PF8"  : pressPF(PFKey.PF8); break;
+            case "PF9"  : pressPF(PFKey.PF9); break;
+            case "PF10" : pressPF(PFKey.PF10); break;
+            case "PF11" : pressPF(PFKey.PF11); break;
+            case "PF12" : pressPF(PFKey.PF12); break;
+            case "PF13" : pressPF(PFKey.PF13); break;
+            case "PF14" : pressPF(PFKey.PF14); break;
+            case "PF15" : pressPF(PFKey.PF15); break;
+            case "PF16" : pressPF(PFKey.PF16); break;
+            case "PF17" : pressPF(PFKey.PF17); break;
+            case "PF18" : pressPF(PFKey.PF18); break;
+            case "PF19" : pressPF(PFKey.PF19); break;
+            case "PF20" : pressPF(PFKey.PF20); break;
+            case "PF21" : pressPF(PFKey.PF21); break;
+            case "PF22" : pressPF(PFKey.PF22); break;
+            case "PF23" : pressPF(PFKey.PF23); break;
+            case "PF24" : pressPF(PFKey.PF24); break;
 
             // PA1 .. PA3
-            case "PA1" : pressPA(PAKey.PA1);
-            case "PA2" : pressPA(PAKey.PA2);
-            case "PA3" : pressPA(PAKey.PA3);
+            case "PA1" : pressPA(PAKey.PA1); break;
+            case "PA2" : pressPA(PAKey.PA2); break;
+            case "PA3" : pressPA(PAKey.PA3); break;
 
             default : {
                 logger.warn("Unknown key from viewer: {}", keyName);
