@@ -106,7 +106,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 
 	   int limit = Math.max(0, rawScreen.split("\n").length - 2); // ignora últimas 2 linhas
 	    for (int i = 0; i < limit; i++) {
-	        String line = rawScreen.split("\n")[i].trim();
+	        String line = rawScreen.split("\n")[i];
 	        screen.append(line.replace("data:", "")).append("\n");
 
 	    }
@@ -552,6 +552,12 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 		return field;
 	}
 	
+	public String getText(int row, int col, int sizeTest) {
+		CursorPosition cursorPosition = new CursorPosition(row, col);
+		return getText(cursorPosition, sizeTest);
+	}
+	
+	
 	/**
 	 * GetTextByField(field, sizeText)
 	 * English: Gets text from the screen based on a field identified by a label. It first finds the position of the field using the label, and then retrieves the text starting from that position for a specified number of characters. The method assumes that the position is based on 1 (the first row and column are considered as 1) and that the sizeText does not exceed the line length from the specified column. It throws an exception if the label is not found on the screen.
@@ -748,6 +754,45 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
         }
 
         setStatus(keyName + " sent");
+    }
+    
+    @Override
+    protected String handleGetCursorFromViewer(String fieldLabel) {
+        // Como você pediu: getPositionField(getScreen(), "User:")
+        Optional<CursorPosition> posOpt = getPositionField(getScreen(), fieldLabel);
+        if (posOpt.isEmpty()) {
+            throw new S3270EmulatorException("Field '" + fieldLabel + "' not found in screen.");
+        }
+        CursorPosition pos = posOpt.get();
+        // Formato esperado pelo viewer: "row,col"
+        return pos.getRow() + "," + pos.getCol();
+    }
+
+    @Override
+    protected String handleGetTextFromViewer(String fieldLabel, Integer size) {
+        return getTextByField(fieldLabel, size);
+    }
+
+    @Override
+    protected String handleGetTextByCursorFromViewer(Integer row, Integer col, Integer size) {
+        return getText(new CursorPosition(row, col), size);
+    }
+
+    @Override
+    protected void handleAbortSessionFromViewer() {
+        logger.info("Abort Session requested from viewer");
+        try {
+            if (session != null) {
+                try {
+                    session.quit(); // Quit + close do processo
+                } catch (Exception e) {
+                    logger.warn("Error on quit, forcing close", e);
+                    session.close();
+                }
+            }
+        } finally {
+            closeViewer();
+        }
     }
 
 }
