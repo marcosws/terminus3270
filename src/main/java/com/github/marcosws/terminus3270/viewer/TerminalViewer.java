@@ -23,13 +23,14 @@ public class TerminalViewer {
     private final JFrame frame;
     private final JTextArea areaScreen;
     private final JLabel statusBar;
+    private final JTextArea actionLogArea;
 
     private final JButton continueButton;
     private final JButton copyButton;
     private final JButton sendTextButton;
-    private final JButton getCursorButton;
+    private final JButton getPositionButton;
     private final JButton getTextButton;
-    private final JButton getTextByCursorButton;
+    private final JButton getTextByPositionButton;
     private final JButton abortButton;
 
     private final JTextField fieldNameField;
@@ -77,11 +78,22 @@ public class TerminalViewer {
         statusBar.setBackground(new Color(240, 240, 240));
         statusBar.setFont(new Font("SansSerif", Font.PLAIN, 12));
 
+        actionLogArea = new JTextArea(5, 84);
+        actionLogArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        actionLogArea.setEditable(false);
+        actionLogArea.setLineWrap(false);
+        actionLogArea.setFocusable(true);
+        actionLogArea.setBackground(new Color(245, 247, 250));
+        actionLogArea.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, Color.GRAY),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        actionLogArea.append("=== Terminal actions log ===\n");
+
         // ===== Campos =====
-        fieldNameField = new JTextField(12);
+        fieldNameField = new JTextField(20);
         fieldNameField.setToolTipText("Label do campo (ex: User:)");
 
-        textField = new JTextField(12);
+        textField = new JTextField(20);
         textField.setToolTipText("Texto a enviar (Send Text) ou resultado dos Gets");
 
         directionCombo = new JComboBox<>(new String[]{
@@ -90,7 +102,7 @@ public class TerminalViewer {
                 "Top Field",
                 "Botton Field"
         });
-        directionCombo.setPreferredSize(new Dimension(120, 28));
+        directionCombo.setPreferredSize(new Dimension(120, 20));
 
         sizeField = new JTextField(4);
         sizeField.setText("10");
@@ -106,12 +118,17 @@ public class TerminalViewer {
         continueButton = createButton("Continue");
         continueButton.setEnabled(false);
         continueButton.setForeground(new Color(0, 160, 0));
-        continueButton.addActionListener(e -> onContinue.run());
+        continueButton.addActionListener(e -> {
+            recordAction("Continue", "button=Continue");
+            onContinue.run();
+        });
 
         copyButton = createButton("Copy Text");
         copyButton.addActionListener(e -> {
+            String screenText = areaScreen.getText();
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-            clipboard.setContents(new StringSelection(areaScreen.getText()), null);
+            clipboard.setContents(new StringSelection(screenText), null);
+            recordAction("Copy Text", "screenCopied=true; chars=" + screenText.length());
             setStatus("Screen copied to clipboard");
         });
 
@@ -126,6 +143,7 @@ public class TerminalViewer {
             }
             try {
                 setStatus("Sending to '" + field + "' (" + direction + ")...");
+                recordAction("Send Text", "field='" + field + "'; text='" + text + "'; direction='" + direction + "'");
                 onSendText.accept(field, text, direction);
                 setStatus("Text sent to '" + field + "'");
             } catch (Exception ex) {
@@ -134,8 +152,8 @@ public class TerminalViewer {
             }
         });
 
-        getCursorButton = createButton("Get Cursor");
-        getCursorButton.addActionListener(e -> {
+        getPositionButton = createButton("Get Position");
+        getPositionButton.addActionListener(e -> {
             String field = fieldNameField.getText().trim();
             if (field.isEmpty()) {
                 warn("Informe o Field (label), ex: User:");
@@ -143,12 +161,28 @@ public class TerminalViewer {
             }
             try {
                 setStatus("Getting position of '" + field + "'...");
+                recordAction("Get Cursor", "field='" + field + "'");
+
                 String coords = onGetCursor.apply(field); // "row,col"
-                String[] parts = coords.split(",");
-                rowField.setText(parts[0].trim());
-                colField.setText(parts[1].trim());
+                String[] parts = coords.split("\\s*,\\s*");
+                if (parts.length < 2) {
+                    throw new IllegalArgumentException("Resposta de posição inválida: '" + coords + "'");
+                }
+
+                String rowValue = parts[0].trim();
+                String colValue = parts[1].trim();
+                rowField.setText(rowValue);
+                colField.setText(colValue);
                 updateGetTextByCursorEnabled();
-                setStatus("Cursor → Row: " + parts[0] + "  Col: " + parts[1]);
+
+                String value = onGetText.apply(field, 80);
+                String normalized = value == null ? "" : value.trim();
+                int fieldSize = calculateFieldSize(normalized);
+                textField.setText(normalized);
+                sizeField.setText(String.valueOf(fieldSize));
+
+                setStatus("Position → Row: " + rowValue + "  Col: " + colValue + "  Size: " + fieldSize);
+                recordAction("Get Position", "field='" + field + "'; startPosition='row=" + rowValue + ", col=" + colValue + "'; text='" + normalized + "'; size=" + fieldSize);
             } catch (Exception ex) {
                 setStatus("Error: " + ex.getMessage());
                 error(ex.getMessage());
@@ -166,27 +200,31 @@ public class TerminalViewer {
             if (size == null) return;
             try {
                 setStatus("Reading field '" + field + "' size=" + size + "...");
+                recordAction("Get Text", "field='" + field + "'; size=" + size);
                 String value = onGetText.apply(field, size);
                 textField.setText(value);
                 setStatus("Get Text → \"" + value + "\"");
+                recordAction("Get Text", "field='" + field + "'; size=" + size + "; result='" + value + "'");
             } catch (Exception ex) {
                 setStatus("Error: " + ex.getMessage());
                 error(ex.getMessage());
             }
         });
 
-        getTextByCursorButton = createButton("Get Text By Cursor");
-        getTextByCursorButton.setEnabled(false);
-        getTextByCursorButton.addActionListener(e -> {
+        getTextByPositionButton = createButton("Get Text By Position");
+        getTextByPositionButton.setEnabled(false);
+        getTextByPositionButton.addActionListener(e -> {
             Integer row = parsePositiveInt(rowField.getText().trim(), "Row");
             Integer col = parsePositiveInt(colField.getText().trim(), "Col");
             Integer size = parsePositiveInt(sizeField.getText().trim(), "Size");
             if (row == null || col == null || size == null) return;
             try {
                 setStatus("Reading at (" + row + "," + col + ") size=" + size + "...");
+                recordAction("Get Text By Position", "row=" + row + "; col=" + col + "; size=" + size);
                 String value = onGetTextByCursor.apply(row, col, size);
                 textField.setText(value);
-                setStatus("Get Text By Cursor → \"" + value + "\"");
+                setStatus("Get Text By Position → \"" + value + "\"");
+                recordAction("Get Text By Position", "row=" + row + "; col=" + col + "; size=" + size + "; result='" + value + "'");
             } catch (Exception ex) {
                 setStatus("Error: " + ex.getMessage());
                 error(ex.getMessage());
@@ -203,6 +241,7 @@ public class TerminalViewer {
                     JOptionPane.WARNING_MESSAGE);
             if (opt == JOptionPane.YES_OPTION) {
                 setStatus("Aborting session...");
+                recordAction("Abort Session", "confirmed=true");
                 try {
                     onAbortSession.run();
                 } catch (Exception ex) {
@@ -225,9 +264,9 @@ public class TerminalViewer {
         buttonsPanel.add(continueButton);
         buttonsPanel.add(copyButton);
         buttonsPanel.add(sendTextButton);
-        buttonsPanel.add(getCursorButton);
+        buttonsPanel.add(getPositionButton);
         buttonsPanel.add(getTextButton);
-        buttonsPanel.add(getTextByCursorButton);
+        buttonsPanel.add(getTextByPositionButton);
         buttonsPanel.add(abortButton);
 
         JPanel fieldsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
@@ -255,15 +294,20 @@ public class TerminalViewer {
         centerPanel.add(new JScrollPane(areaScreen), BorderLayout.CENTER);
         centerPanel.add(keysPanel, BorderLayout.EAST);
 
+        JPanel footerPanel = new JPanel(new BorderLayout());
+        footerPanel.add(statusBar, BorderLayout.NORTH);
+        footerPanel.add(new JScrollPane(actionLogArea), BorderLayout.CENTER);
+
         frame.add(northPanel, BorderLayout.NORTH);
         frame.add(centerPanel, BorderLayout.CENTER);
-        frame.add(statusBar, BorderLayout.SOUTH);
+        frame.add(footerPanel, BorderLayout.SOUTH);
 
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
-        frame.setSize(1060, 760);
-        frame.setResizable(false);
+        frame.setSize(1040, 820);
+        frame.setMinimumSize(new Dimension(1020, 820));
+        frame.setResizable(true);
     }
 
     // -------------------------------------------------------------------------
@@ -352,6 +396,13 @@ public class TerminalViewer {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+    private void recordAction(String action, String details) {
+        String time = LocalTime.now().format(TIME_FMT);
+        String log = "[" + time + "] " + action + (details != null && !details.isEmpty() ? " | " + details : "");
+        actionLogArea.append(log + "\n");
+        actionLogArea.setCaretPosition(actionLogArea.getDocument().getLength());
+    }
+
     private JButton createButton(String text) {
         JButton btn = new JButton(text);
         btn.setPreferredSize(BTN_SIZE);
@@ -362,7 +413,7 @@ public class TerminalViewer {
     private void updateGetTextByCursorEnabled() {
         boolean ok = !rowField.getText().trim().isEmpty()
                   && !colField.getText().trim().isEmpty();
-        getTextByCursorButton.setEnabled(ok);
+        getTextByPositionButton.setEnabled(ok);
     }
 
     private Integer parsePositiveInt(String value, String name) {
@@ -374,6 +425,26 @@ public class TerminalViewer {
             warn(name + " deve ser um número positivo.");
             return null;
         }
+    }
+
+    /**
+     * Sincroniza o campo de tamanho com o texto atual do campo de texto.
+     * Facilita o uso do Get Text By Position após obter a posição.
+     */
+    private void syncSizeFromCurrentText() {
+        String text = textField.getText();
+        if (text != null) {
+            sizeField.setText(String.valueOf(calculateFieldSize(text)));
+        }
+    }
+
+    /**
+     * Calcula o tamanho real do campo descontando 4 colunas da moldura.
+     */
+    private int calculateFieldSize(String text) {
+        if (text == null) return 0;
+        int len = text.length();
+        return Math.max(0, len - 4);
     }
 
     private void warn(String msg) {

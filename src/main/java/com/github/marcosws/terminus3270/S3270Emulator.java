@@ -150,7 +150,34 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	public Optional<CursorPosition> getPositionField(ScreenContent screen, String field) {
 		return getPositionField(screen.getContent(), field);
 	}
-	
+
+	/**
+	 * Returns the start position of the field value, preserving the original
+	 * behavior used by the main automation methods.
+	 * <p>
+	 * This method is intentionally separate from {@link #getPositionField(String, String)}
+	 * so the legacy logic used by send/get operations remains unchanged.
+	 */
+	public Optional<CursorPosition> getPositionStartField(String screen, String field) {
+		logger.info("Finding start position of field '{}' in the screen", field);
+		String[] lines = screen.split("\n");
+
+		for (int i = 0; i < lines.length; i++) {
+			int col = lines[i].indexOf(field);
+			if (col >= 0) {
+				int row = i + 1;
+				int column = col + field.length() + 1;
+				return Optional.of(new CursorPosition(row, column));
+			}
+		}
+
+		return Optional.empty();
+	}
+
+	public Optional<CursorPosition> getPositionStartField(ScreenContent screen, String field) {
+		return getPositionStartField(screen.getContent(), field);
+	}
+
 	/**
 	 * Sends text to a field identified by a label. It first gets the current screen, finds the position of the field using the label, moves the cursor to that position, and sends the text.
 	 * @param field The text of the label that identifies the input field
@@ -541,15 +568,24 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	public String getText(CursorPosition position, int sizeText) {
 		logger.info("Getting text from the screen starting from position (row: {}, col: {}) with size {}", position.getRow(), position.getCol(), sizeText);
 		String screen = asciiScreen();
-		int contRow = 0;
-		String field = "";
-		for (String line : screen.split("\n")) {
-			if ((contRow++) == (position.getRow() - 1)) {
-				field = line.substring(position.getCol(), position.getCol() + sizeText);
-			}
+		String[] lines = screen.split("\\n");
+		if (position == null || sizeText <= 0) {
+			this.updateScreenViewer();
+			return "";
 		}
+		if (position.getRow() < 1 || position.getRow() > lines.length) {
+			this.updateScreenViewer();
+			return "";
+		}
+		String line = lines[position.getRow() - 1];
+		int start = Math.max(0, position.getCol() - 1);
+		if (start >= line.length()) {
+			this.updateScreenViewer();
+			return "";
+		}
+		int end = Math.min(line.length(), start + sizeText);
 		this.updateScreenViewer();
-		return field;
+		return line.substring(start, end);
 	}
 	
 	public String getText(int row, int col, int sizeTest) {
@@ -758,8 +794,9 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
     
     @Override
     protected String handleGetCursorFromViewer(String fieldLabel) {
-        // Como você pediu: getPositionField(getScreen(), "User:")
-        Optional<CursorPosition> posOpt = getPositionField(getScreen(), fieldLabel);
+        // Usa a posição inicial real do conteúdo do campo para manter a semântica de
+        // "coluna do início do texto" sem alterar a lógica legacy do getPositionField.
+        Optional<CursorPosition> posOpt = getPositionStartField(getScreen(), fieldLabel);
         if (posOpt.isEmpty()) {
             throw new S3270EmulatorException("Field '" + fieldLabel + "' not found in screen.");
         }
