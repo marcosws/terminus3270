@@ -106,7 +106,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 
 	   int limit = Math.max(0, rawScreen.split("\n").length - 2); // ignora últimas 2 linhas
 	    for (int i = 0; i < limit; i++) {
-	        String line = rawScreen.split("\n")[i].trim();
+	        String line = rawScreen.split("\n")[i];
 	        screen.append(line.replace("data:", "")).append("\n");
 
 	    }
@@ -150,7 +150,34 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	public Optional<CursorPosition> getPositionField(ScreenContent screen, String field) {
 		return getPositionField(screen.getContent(), field);
 	}
-	
+
+	/**
+	 * Returns the start position of the field value, preserving the original
+	 * behavior used by the main automation methods.
+	 * <p>
+	 * This method is intentionally separate from {@link #getPositionField(String, String)}
+	 * so the legacy logic used by send/get operations remains unchanged.
+	 */
+	public Optional<CursorPosition> getPositionStartField(String screen, String field) {
+		logger.info("Finding start position of field '{}' in the screen", field);
+		String[] lines = screen.split("\n");
+
+		for (int i = 0; i < lines.length; i++) {
+			int col = lines[i].indexOf(field);
+			if (col >= 0) {
+				int row = i + 1;
+				int column = col + field.length() + 1;
+				return Optional.of(new CursorPosition(row, column));
+			}
+		}
+
+		return Optional.empty();
+	}
+
+	public Optional<CursorPosition> getPositionStartField(ScreenContent screen, String field) {
+		return getPositionStartField(screen.getContent(), field);
+	}
+
 	/**
 	 * Sends text to a field identified by a label. It first gets the current screen, finds the position of the field using the label, moves the cursor to that position, and sends the text.
 	 * @param field The text of the label that identifies the input field
@@ -541,16 +568,31 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	public String getText(CursorPosition position, int sizeText) {
 		logger.info("Getting text from the screen starting from position (row: {}, col: {}) with size {}", position.getRow(), position.getCol(), sizeText);
 		String screen = asciiScreen();
-		int contRow = 0;
-		String field = "";
-		for (String line : screen.split("\n")) {
-			if ((contRow++) == (position.getRow() - 1)) {
-				field = line.substring(position.getCol(), position.getCol() + sizeText);
-			}
+		String[] lines = screen.split("\\n");
+		if (position == null || sizeText <= 0) {
+			this.updateScreenViewer();
+			return "";
 		}
+		if (position.getRow() < 1 || position.getRow() > lines.length) {
+			this.updateScreenViewer();
+			return "";
+		}
+		String line = lines[position.getRow() - 1];
+		int start = Math.max(0, position.getCol() - 1);
+		if (start >= line.length()) {
+			this.updateScreenViewer();
+			return "";
+		}
+		int end = Math.min(line.length(), start + sizeText);
 		this.updateScreenViewer();
-		return field;
+		return line.substring(start, end);
 	}
+	
+	public String getText(int row, int col, int sizeTest) {
+		CursorPosition cursorPosition = new CursorPosition(row, col);
+		return getText(cursorPosition, sizeTest);
+	}
+	
 	
 	/**
 	 * GetTextByField(field, sizeText)
@@ -648,6 +690,146 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
     @Override
     public void onClose() {
         this.closeViewer();
+    }
+    
+    @Override
+    protected void handleSendTextFromViewer(String field, String text, String direction) {
+        logger.info("Viewer SendText → field='{}', text='{}', direction='{}'", field, text, direction);
+
+        switch (direction) {
+            case "Right Field":
+                sendTextByField(field, text);
+                break;
+            case "Left Field":
+                sendTextByField(field, text, 0, -1);
+                break;
+            case "Top Field":
+                sendTextByField(field, text, -1, 0);
+                break;
+            case "Botton Field":
+                sendTextByField(field, text, 1, 0);
+                break;
+            default:
+                sendTextByField(field, text);
+        }
+    }
+
+    @Override
+    protected String handleGetTextFromViewer(String field, int size, String direction) {
+        logger.info("Viewer GetText → field='{}', size={}, direction='{}'", field, size, direction);
+
+        switch (direction) {
+            case "Right Field":
+                return getTextByField(field, size);
+
+            case "Left Field":
+                return getTextBeforeField(field, size);
+
+            case "Top Field":
+                return getTextTopField(field, size, 1);   // 1 linha acima
+
+            case "Botton Field":
+                return getTextBottonField(field, size, 1); // 1 linha abaixo
+
+            default:
+                return getTextByField(field, size);
+        }
+    }
+    
+    @Override
+    protected void handleKeyFromViewer(String keyName) {
+        logger.info("Viewer key pressed: {}", keyName);
+        setStatus("Sending " + keyName + "...");
+
+        switch (keyName) {
+            case "Enter"       : enter(); break;
+            case "Tab"         : tab(); break;
+            case "Home"        : home(); break;
+            case "Backspace"   : backspace(); break;
+            case "Clear"       : clear(); break;
+            case "Reset"       : reset(); break;
+            case "DeleteField" : deleteField(); break;
+            case "EraseEOF"    : eraseEOF(); break;
+            case "EraseInput"  : eraseInput(); break;
+
+            // PF1 .. PF24
+            case "PF1"  : pressPF(PFKey.PF1); break;
+            case "PF2"  : pressPF(PFKey.PF2); break;
+            case "PF3"  : pressPF(PFKey.PF3); break;
+            case "PF4"  : pressPF(PFKey.PF4); break;
+            case "PF5"  : pressPF(PFKey.PF5); break;
+            case "PF6"  : pressPF(PFKey.PF6); break;
+            case "PF7"  : pressPF(PFKey.PF7); break;
+            case "PF8"  : pressPF(PFKey.PF8); break;
+            case "PF9"  : pressPF(PFKey.PF9); break;
+            case "PF10" : pressPF(PFKey.PF10); break;
+            case "PF11" : pressPF(PFKey.PF11); break;
+            case "PF12" : pressPF(PFKey.PF12); break;
+            case "PF13" : pressPF(PFKey.PF13); break;
+            case "PF14" : pressPF(PFKey.PF14); break;
+            case "PF15" : pressPF(PFKey.PF15); break;
+            case "PF16" : pressPF(PFKey.PF16); break;
+            case "PF17" : pressPF(PFKey.PF17); break;
+            case "PF18" : pressPF(PFKey.PF18); break;
+            case "PF19" : pressPF(PFKey.PF19); break;
+            case "PF20" : pressPF(PFKey.PF20); break;
+            case "PF21" : pressPF(PFKey.PF21); break;
+            case "PF22" : pressPF(PFKey.PF22); break;
+            case "PF23" : pressPF(PFKey.PF23); break;
+            case "PF24" : pressPF(PFKey.PF24); break;
+
+            // PA1 .. PA3
+            case "PA1" : pressPA(PAKey.PA1); break;
+            case "PA2" : pressPA(PAKey.PA2); break;
+            case "PA3" : pressPA(PAKey.PA3); break;
+
+            default : {
+                logger.warn("Unknown key from viewer: {}", keyName);
+                setStatus("Unknown key: " + keyName);
+            }
+        }
+
+        setStatus(keyName + " sent");
+    }
+    
+    @Override
+    protected String handleGetCursorFromViewer(String fieldLabel) {
+        // Usa a posição inicial real do conteúdo do campo para manter a semântica de
+        // "coluna do início do texto" sem alterar a lógica legacy do getPositionField.
+        Optional<CursorPosition> posOpt = getPositionStartField(getScreen(), fieldLabel);
+        if (posOpt.isEmpty()) {
+            throw new S3270EmulatorException("Field '" + fieldLabel + "' not found in screen.");
+        }
+        CursorPosition pos = posOpt.get();
+        // Formato esperado pelo viewer: "row,col"
+        return pos.getRow() + "," + pos.getCol();
+    }
+
+    @Override
+    protected String handleGetTextFromViewer(String fieldLabel, Integer size) {
+        return getTextByField(fieldLabel, size);
+    }
+
+    @Override
+    protected String handleGetTextByCursorFromViewer(Integer row, Integer col, Integer size) {
+        return getText(new CursorPosition(row, col), size);
+    }
+
+    @Override
+    protected void handleAbortSessionFromViewer() {
+        logger.info("Abort Session requested from viewer");
+        try {
+            if (session != null) {
+                try {
+                    session.quit(); // Quit + close do processo
+                } catch (Exception e) {
+                    logger.warn("Error on quit, forcing close", e);
+                    session.close();
+                }
+            }
+        } finally {
+            closeViewer();
+        }
     }
 
 }
