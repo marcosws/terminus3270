@@ -126,7 +126,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 
 		logger.info("Finding position of field '{}' in the screen", field);
 	    String[] lines = screen.split("\n");
-
+	    
 	    for (int i = 0; i < lines.length; i++) {
 	        int col = lines[i].indexOf(field);
 
@@ -151,28 +151,39 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 		return getPositionField(screen.getContent(), field);
 	}
 
-	/**
+ 	/**
 	 * Returns the start position of the field value, preserving the original
 	 * behavior used by the main automation methods.
-	 * <p>
+	 * Returns the starting position (row and column) of the given text on the screen.
+ 	 * <p>
 	 * This method is intentionally separate from {@link #getPositionField(String, String)}
 	 * so the legacy logic used by send/get operations remains unchanged.
-	 */
+	 * Unlike {@link #getPositionField(String, String)}, which returns the position
+	 * <em>after</em> the label (suitable for typing into an input field), this method
+	 * returns the position where the matched text <em>begins</em> (1-based).
+	 * Used by the Terminal Viewer "Get Position" button.
+	 * <p>
+	 * Example: for text {@code "FAKE3270 v2.1 - SIMULADOR MAINFRAME"} found at
+	 * index 3 of line 0, returns row=1, col=4.
+ 	 */
 	public Optional<CursorPosition> getPositionStartField(String screen, String field) {
-		logger.info("Finding start position of field '{}' in the screen", field);
+		logger.info("Finding start position of text '{}' in the screen", field);
 		String[] lines = screen.split("\n");
 
 		for (int i = 0; i < lines.length; i++) {
-			int col = lines[i].indexOf(field);
+			// Strip optional "data:" prefix that may remain from Ascii() output
+			String line = lines[i].startsWith("data:") ? lines[i].substring(5) : lines[i];
+			int col = line.indexOf(field);
 			if (col >= 0) {
 				int row = i + 1;
-				int column = col + field.length() + 1;
+				int column = col + 1; // 1-based column where the text starts
 				return Optional.of(new CursorPosition(row, column));
 			}
 		}
 
 		return Optional.empty();
 	}
+
 
 	public Optional<CursorPosition> getPositionStartField(ScreenContent screen, String field) {
 		return getPositionStartField(screen.getContent(), field);
@@ -566,12 +577,19 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	 * 
 	 */
 	public String getText(CursorPosition position, int sizeText) {
-		logger.info("Getting text from the screen starting from position (row: {}, col: {}) with size {}", position.getRow(), position.getCol(), sizeText);
-		String screen = asciiScreen();
-		String[] lines = screen.split("\\n");
 		if (position == null || sizeText <= 0) {
 			this.updateScreenViewer();
 			return "";
+		}
+
+		logger.info("Getting text from the screen starting from position (row: {}, col: {}) with size {}", position.getRow(), position.getCol(), sizeText);
+		String screen = asciiScreen();
+		String[] lines = screen.split("\\n");
+		
+		for (int i = 0; i < lines.length; i++) {
+			if (lines[i].startsWith("data:")) {
+				lines[i] = lines[i].substring(5);
+			}
 		}
 		if (position.getRow() < 1 || position.getRow() > lines.length) {
 			this.updateScreenViewer();
@@ -605,9 +623,9 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	public String getTextByField(String field, int sizeText) {
 		logger.info("Getting text from the screen based on field '{}' with size {}", field, sizeText);
 		CursorPosition position;
-		Optional<CursorPosition> posOpt = getPositionField(asciiScreen(), field);
+		Optional<CursorPosition> posOpt = getPositionStartField(asciiScreen(), field);
 		if(posOpt.isPresent()) 
-			position = posOpt.get();
+			position = new CursorPosition(posOpt.get().getRow(), posOpt.get().getCol() + field.length() + 1);
 		else
 			throw new S3270EmulatorException("Field '" + field + "' not found in screen.");
 		return getText(position, sizeText);
@@ -615,7 +633,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	
 	/**
 	 * GetTextBeforeField(field, sizeText)
-	 * English: Gets text from the screen that is located before a field identified by a label. It first finds the position of the field using the label, calculates the new column position by subtracting the size of the text and the length of the field from the original column position, and then retrieves the text starting from that new position for a specified number of characters. The method assumes that the position is based on 1 (the first row and column are considered as 1) and that the sizeText does not exceed the line length from the calculated column. It throws an exception if the label is not found on the screen.
+	 * English: Gets text from the screen that is located before a field identified by a label. It first finds the start position of the field using the label, calculates the column by subtracting sizeText from that start position, and then retrieves the text for the specified number of characters.
 	 * @param field The text of the label that identifies the input field
 	 * @param sizeText The number of characters to be obtained starting from the calculated position before the field
 	 * @return The text obtained from the screen based on the calculated position before the field and size specified
@@ -623,15 +641,21 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	 */
 	public String getTextBeforeField(String field, int sizeText) {
 		logger.info("Getting text from the screen before field '{}' with size {}", field, sizeText);
-		CursorPosition position;
-		Optional<CursorPosition> posOpt = getPositionField(asciiScreen(), field);
-		if(posOpt.isPresent()) 
-			position = posOpt.get();
-		else
+
+		Optional<CursorPosition> posOpt = getPositionStartField(asciiScreen(), field);
+		if (posOpt.isEmpty()) {
 			throw new S3270EmulatorException("Field '" + field + "' not found in screen.");
-		int calcColumn = Math.abs((position.getCol() - 1) - sizeText);
-		int newColumn = Math.abs(calcColumn - field.length());
-		return getText(new CursorPosition(position.getRow(), newColumn), sizeText);
+		}
+
+		CursorPosition position = posOpt.get();
+
+		// Início do texto imediatamente antes do campo
+		int newCol = position.getCol() - sizeText;
+		if (newCol < 1) {
+			newCol = 1;
+		}
+
+		return getText(new CursorPosition(position.getRow(), newCol), sizeText);
 	}
 	
 	
@@ -648,14 +672,14 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	 */
 	public String getTextBottonField(String field, int sizeText, int offsetRow) {
 		logger.info("Getting text from the screen below field '{}' with size {} and row offset {}", field, sizeText, offsetRow);
-		CursorPosition position;
-		Optional<CursorPosition> posOpt = getPositionField(asciiScreen(), field);
-		if(posOpt.isPresent()) 
-			position = posOpt.get();
-		else
+		Optional<CursorPosition> posOpt = getPositionStartField(asciiScreen(), field);
+		if (posOpt.isEmpty()) {
 			throw new S3270EmulatorException("Field '" + field + "' not found in screen.");
-		int newRow = Math.abs(position.getRow() + offsetRow);
-		int newCol = Math.abs((position.getCol() - 1) - field.length());
+		}
+
+		CursorPosition position = posOpt.get();
+		int newRow = position.getRow() + Math.abs(offsetRow);
+		int newCol = position.getCol();
 		return getText(new CursorPosition(newRow, newCol), sizeText);
 	}
 	
@@ -665,20 +689,22 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	 * Example: if the screen contains "Username: user123" on line 5, and you want to get the text located 2 rows above starting from the same column with a size of 10, you would call getTextTopField("Username:", 10, 2) and it would return the text located at that position.
 	 * @param field The text of the label that identifies the input field
 	 * @param sizeText The number of characters to be obtained starting from the calculated position above the field
-	 * @param offsetRow The number of rows to offset from the original field position (positive for down, negative for up)
+	 * @param offsetRow The number of rows to offset from the original field position (positive for up)
 	 * @return The text obtained from the screen based on the calculated position above the field and size specified
 	 * @throws S3270EmulatorException if the label is not found on the screen
 	 */
 	public String getTextTopField(String field, int sizeText, int offsetRow) {
 		logger.info("Getting text from the screen above field '{}' with size {} and row offset {}", field, sizeText, offsetRow);
-		CursorPosition position;
-		Optional<CursorPosition> posOpt = getPositionField(asciiScreen(), field);
-		if(posOpt.isPresent()) 
-			position = posOpt.get();
-		else
+
+		Optional<CursorPosition> posOpt = getPositionStartField(asciiScreen(), field);
+		if (posOpt.isEmpty()) {
 			throw new S3270EmulatorException("Field '" + field + "' not found in screen.");
-		int newRow = Math.abs(position.getRow() - offsetRow);
-		int newCol = Math.abs((position.getCol() - 1) - field.length());
+		}
+			
+		CursorPosition position = posOpt.get();
+		int newRow = Math.abs(position.getRow() - Math.abs(offsetRow));
+		int newCol = position.getCol(); // já é a coluna inicial do texto
+
 		return getText(new CursorPosition(newRow, newCol), sizeText);
 	}
 
@@ -803,11 +829,6 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
         CursorPosition pos = posOpt.get();
         // Formato esperado pelo viewer: "row,col"
         return pos.getRow() + "," + pos.getCol();
-    }
-
-    @Override
-    protected String handleGetTextFromViewer(String fieldLabel, Integer size) {
-        return getTextByField(fieldLabel, size);
     }
 
     @Override
