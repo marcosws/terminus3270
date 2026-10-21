@@ -6,11 +6,23 @@ import javax.swing.event.DocumentListener;
 
 import com.github.marcosws.terminus3270.viewer.utils.Utils;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.net.URL;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -59,6 +71,14 @@ public class TerminalViewer {
                           Runnable onAbortSession) {
 
         frame = new JFrame("Terminal 3270 Viewer");
+        
+        List<Image> icons = new ArrayList<>();
+        addIcons(icons, "/icons/terminus3270_16.png");
+        addIcons(icons, "/icons/terminus3270_32.png");
+
+        if (!icons.isEmpty()) {
+            frame.setIconImages(icons);
+        }
 
         // ===== Tela 3270 =====
         areaScreen = new JTextArea(28, 84);
@@ -506,5 +526,15 @@ public class TerminalViewer {
         SwingUtilities.invokeLater(() -> {
             if (frame != null) frame.dispose();
         });
+    }
+    
+    
+    private static void addIcons(List<Image> listIcons, String caminho) {
+        URL url = TerminalViewer.class.getResource(caminho);
+        if (url != null) {
+        	listIcons.add(new ImageIcon(url).getImage());
+        } else {
+            System.err.println("Ícone não encontrado: " + caminho);
+        }
     }
 }
