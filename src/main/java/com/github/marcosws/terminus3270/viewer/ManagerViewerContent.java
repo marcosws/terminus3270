@@ -61,11 +61,6 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	    return "0,0";
 	}
 
-	/** (fieldLabel, size) → texto */
-	protected String handleGetTextFromViewer(String fieldLabel, Integer size) {
-	    return "";
-	}
-
 	/** (row, col, size) → texto */
 	protected String handleGetTextByCursorFromViewer(Integer row, Integer col, Integer size) {
 	    return "";

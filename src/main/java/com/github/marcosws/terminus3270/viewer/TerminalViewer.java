@@ -11,13 +11,12 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class TerminalViewer {
 
-    private static final Dimension BTN_SIZE = new Dimension(140, 28);
+    private static final Dimension BTN_SIZE = new Dimension(154, 30);
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final JFrame frame;
@@ -46,7 +45,7 @@ public class TerminalViewer {
      * @param onContinue          Continue
      * @param onSendText          (field, text, direction)
      * @param onGetCursor         field → "row,col"
-     * @param onGetText           (field, size) → value
+     * @param onGetText           (field, size, direction) → value
      * @param onGetTextByCursor   (row, col, size) → value
      * @param onKeyAction         nome da tecla: "Enter", "PF3", "PA1"...
      * @param onAbortSession      encerra sessão + fecha viewer
@@ -54,7 +53,7 @@ public class TerminalViewer {
     public TerminalViewer(Runnable onContinue,
                           TriConsumer<String, String, String> onSendText,
                           Function<String, String> onGetCursor,
-                          BiFunction<String, Integer, String> onGetText,
+                          TriFunction<String, Integer, String, String> onGetText,
                           TriFunction<Integer, Integer, Integer, String> onGetTextByCursor,
                           Consumer<String> onKeyAction,
                           Runnable onAbortSession) {
@@ -156,13 +155,14 @@ public class TerminalViewer {
         getPositionButton.addActionListener(e -> {
             String field = fieldNameField.getText().trim();
             if (field.isEmpty()) {
-                warn("Informe o Field (label), ex: User:");
+                warn("Informe o Field (texto a localizar), ex: FAKE3270 v2.1 - SIMULADOR MAINFRAME");
                 return;
             }
             try {
-                setStatus("Getting position of '" + field + "'...");
-                recordAction("Get Cursor", "field='" + field + "'");
+                setStatus("Getting start position of '" + field + "'...");
+                recordAction("Get Position", "field='" + field + "'");
 
+                // Retorna a posição inicial (row,col) do texto no Field
                 String coords = onGetCursor.apply(field); // "row,col"
                 String[] parts = coords.split("\\s*,\\s*");
                 if (parts.length < 2) {
@@ -175,9 +175,12 @@ public class TerminalViewer {
                 colField.setText(colValue);
                 updateGetTextByCursorEnabled();
 
-                String value = onGetText.apply(field, 80);
-                String normalized = value == null ? "" : value.trim();
-                int fieldSize = calculateFieldSize(normalized);
+                // Size = comprimento do texto localizado; Text = o próprio texto encontrado
+                int fieldSize = field.length();
+                int row = Integer.parseInt(rowValue);
+                int col = Integer.parseInt(colValue);
+                String value = onGetTextByCursor.apply(row, col, fieldSize);
+                String normalized = value == null ? field : value;
                 textField.setText(normalized);
                 sizeField.setText(String.valueOf(fieldSize));
 
@@ -193,18 +196,19 @@ public class TerminalViewer {
         getTextButton.addActionListener(e -> {
             String field = fieldNameField.getText().trim();
             Integer size = parsePositiveInt(sizeField.getText().trim(), "Size");
+            String direction = (String) directionCombo.getSelectedItem();
             if (field.isEmpty()) {
                 warn("Informe o Field (label).");
                 return;
             }
             if (size == null) return;
             try {
-                setStatus("Reading field '" + field + "' size=" + size + "...");
-                recordAction("Get Text", "field='" + field + "'; size=" + size);
-                String value = onGetText.apply(field, size);
+                setStatus("Reading field '" + field + "' (" + direction + ") size=" + size + "...");
+                recordAction("Get Text", "field='" + field + "'; size=" + size + "; direction='" + direction + "'");
+                String value = onGetText.apply(field, size, direction);
                 textField.setText(value);
                 setStatus("Get Text → \"" + value + "\"");
-                recordAction("Get Text", "field='" + field + "'; size=" + size + "; result='" + value + "'");
+                recordAction("Get Text", "field='" + field + "'; size=" + size + "; direction='" + direction + "'; result='" + value + "'");
             } catch (Exception ex) {
                 setStatus("Error: " + ex.getMessage());
                 error(ex.getMessage());
@@ -305,7 +309,7 @@ public class TerminalViewer {
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
-        frame.setSize(1040, 820);
+        frame.setSize(1160, 820);
         frame.setMinimumSize(new Dimension(1020, 820));
         frame.setResizable(true);
     }
@@ -384,11 +388,14 @@ public class TerminalViewer {
 
     private void fireKey(String name, Consumer<String> onKeyAction) {
         setStatus("Key: " + name);
+        recordAction("Control Key", "key='" + name + "'");
         try {
             onKeyAction.accept(name);
             setStatus(name + " sent");
+            recordAction("Control Key", "key='" + name + "'; result='sent'");
         } catch (Exception ex) {
             setStatus("Error: " + ex.getMessage());
+            recordAction("Control Key", "key='" + name + "'; error='" + ex.getMessage() + "'");
             error(ex.getMessage());
         }
     }
@@ -431,21 +438,21 @@ public class TerminalViewer {
      * Sincroniza o campo de tamanho com o texto atual do campo de texto.
      * Facilita o uso do Get Text By Position após obter a posição.
      */
-    private void syncSizeFromCurrentText() {
-        String text = textField.getText();
-        if (text != null) {
-            sizeField.setText(String.valueOf(calculateFieldSize(text)));
-        }
-    }
+//    private void syncSizeFromCurrentText() {
+//        String text = textField.getText();
+//        if (text != null) {
+//            sizeField.setText(String.valueOf(calculateFieldSize(text)));
+//        }
+//    }
 
-    /**
-     * Calcula o tamanho real do campo descontando 4 colunas da moldura.
-     */
-    private int calculateFieldSize(String text) {
-        if (text == null) return 0;
-        int len = text.length();
-        return Math.max(0, len - 4);
-    }
+//    /**
+//     * Calcula o tamanho real do campo descontando 4 colunas da moldura.
+//     */
+//    private int calculateFieldSize(String text) {
+//        if (text == null) return 0;
+//        int len = text.length();
+//        return Math.max(0, len - 4);
+//    }
 
     private void warn(String msg) {
         setStatus(msg);

@@ -73,7 +73,7 @@ public class EmulatorIntegrationTest {
 		emulator.sendTextByField("Opcao ==>", option.trim());
 		emulator.enter();
 		assertTrue(emulator.asciiScreen().contains("CONSULTA DE SALDO"));
-		assertEquals("R$ 1.234,56", emulator.getTextByField("Saldo atual:", 12).trim());
+		assertEquals("R$ 1.234,56", emulator.getTextByField("Saldo atual:", 18).trim());
 		
 	}
 	
@@ -85,7 +85,7 @@ public class EmulatorIntegrationTest {
 		emulator.tab();
 		emulator.sendTextByField("Password:", "1234");
 		emulator.enter();
-		String option = emulator.getTextBeforeField("- SALDO", 3);
+		String option = emulator.getTextBeforeField("- SALDO", 5);
 		emulator.sendTextByField("Opcao ==>", option.trim());
 		emulator.enter();
 		emulator.pressPF(PFKey.PF3);
