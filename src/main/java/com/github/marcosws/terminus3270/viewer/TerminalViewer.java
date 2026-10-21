@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
+/**
+ * ToDo: adicionar Botão: Send text by Position usando o moveAndSendString(row, col, text);
+ */
 public class TerminalViewer {
 
-    private static final Dimension BTN_SIZE = new Dimension(154, 30);
+    private static final Dimension BTN_SIZE = new Dimension(158, 30);
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final JFrame frame;
@@ -288,8 +290,8 @@ public class TerminalViewer {
         buttonsPanel.add(continueButton);
         buttonsPanel.add(copyButton);
         buttonsPanel.add(sendTextButton);
-        buttonsPanel.add(getPositionButton);
         buttonsPanel.add(getTextButton);
+        buttonsPanel.add(getPositionButton);
         buttonsPanel.add(getTextByPositionButton);
         buttonsPanel.add(abortButton);
 

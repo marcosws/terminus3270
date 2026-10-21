@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.github.marcosws.terminus3270.S3270Emulator;
 import com.github.marcosws.terminus3270.S3270Session;
+import com.github.marcosws.terminus3270.components.CursorPosition;
 import com.github.marcosws.terminus3270.enums.EmulatorMode;
 import com.github.marcosws.terminus3270.enums.PFKey;
 import com.github.marcosws.terminus3270.integration.utils.ConfigFakeS3270;
@@ -43,6 +44,9 @@ public class EmulatorIntegrationTestLocal {
 		emulator.pauseScript();
 		emulator.enter();
 		
+		// row=2; col=26; size=17; result='CONSULTA DE SALDO' <- Information from TerminalViwer
+		System.out.println( "GET TEXT FROM POSITION: [" + emulator.getText(new CursorPosition(2, 26), 17) + "]"); 
+		
 		System.out.println(emulator.asciiScreen());
 		emulator.pauseScript();
 		emulator.pressPF(PFKey.PF3);
@@ -58,6 +62,8 @@ public class EmulatorIntegrationTestLocal {
 		
 		emulator.enter();
 		
+		// [18:58:53] Get Text By Position | row=2; col=26; size=19; result='CADASTRO DE CLIENTE'
+		System.out.println( "GET TEXT FROM POSITION: [" + emulator.getText(new CursorPosition(2, 26), 19) + "]"); 
 		
 		System.out.println(emulator.asciiScreen());
 		emulator.pauseScript();
