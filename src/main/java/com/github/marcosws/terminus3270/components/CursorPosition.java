@@ -9,6 +9,11 @@ public class CursorPosition {
 	private final int row;
 	private final int col;
 	
+	/**
+	 * CursorPosition(int row, int col)
+	 * @param row
+	 * @param col
+	 */
 	public CursorPosition(int row, int col) {
 		if (row < 0 || col < 0) {
 			throw new IllegalArgumentException(
