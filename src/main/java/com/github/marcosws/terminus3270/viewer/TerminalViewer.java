@@ -52,6 +52,7 @@ public class TerminalViewer {
     private final JTextField sizeField;
     private final JTextField rowField;
     private final JTextField colField;
+    
 
     private String lastScreen = "";
 
@@ -86,7 +87,7 @@ public class TerminalViewer {
         areaScreen = new JTextArea(28, 84);
         areaScreen.setFont(new Font("Monospaced", Font.PLAIN, 16));
         areaScreen.setEditable(false);
-        areaScreen.setFocusable(false);
+        areaScreen.setFocusable(true);
         areaScreen.setBackground(Color.BLACK);
         areaScreen.setForeground(Color.CYAN);
 
@@ -99,7 +100,7 @@ public class TerminalViewer {
         statusBar.setBackground(new Color(240, 240, 240));
         statusBar.setFont(new Font("SansSerif", Font.PLAIN, 12));
 
-        actionLogArea = new JTextArea(5, 84);
+        actionLogArea = new JTextArea(10, 84);
         actionLogArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
         actionLogArea.setEditable(false);
         actionLogArea.setLineWrap(false);
@@ -145,6 +146,7 @@ public class TerminalViewer {
         });
 
         copyButton = createButton("Copy Text");
+        copyButton.setToolTipText("Copy text to the system clipboard");
         copyButton.addActionListener(e -> {
             String screenText = areaScreen.getText();
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -154,6 +156,7 @@ public class TerminalViewer {
         });
 
         sendTextButton = createButton("Send Text");
+        sendTextButton.setToolTipText("Send text to the terminal; specify the Field: and the Text: - Ex: Field: User:  Text: ibmuser");
         sendTextButton.addActionListener(e -> {
             String field = fieldNameField.getText().trim();
             String text = textField.getText();
@@ -174,6 +177,7 @@ public class TerminalViewer {
         });
 
         getPositionButton = createButton("Get Position");
+        getPositionButton.setToolTipText("Retrieves the position—starting row and column—of the text. Enter the text in the Field: input; the result will show the Row: and Col:.");
         getPositionButton.addActionListener(e -> {
             String field = fieldNameField.getText().trim();
             if (field.isEmpty()) {
@@ -215,6 +219,7 @@ public class TerminalViewer {
         });
 
         getTextButton = createButton("Get Text");
+        getTextButton.setToolTipText("Retrieves text from a field; please specify the Field: and Size:");
         getTextButton.addActionListener(e -> {
             String field = fieldNameField.getText().trim();
             Integer size = parsePositiveInt(sizeField.getText().trim(), "Size");
@@ -238,6 +243,7 @@ public class TerminalViewer {
         });
 
         getTextByPositionButton = createButton("Get Text By Position");
+        getTextByPositionButton.setToolTipText("Retrieves text based on Row:, Col:, and Size:; use after Get Position.");
         getTextByPositionButton.setEnabled(false);
         getTextByPositionButton.addActionListener(e -> {
             Integer row = parsePositiveInt(rowField.getText().trim(), "Row");
@@ -285,44 +291,30 @@ public class TerminalViewer {
         rowField.getDocument().addDocumentListener(coordListener);
         colField.getDocument().addDocumentListener(coordListener);
 
-        // ===== Layout superior: botões + campos =====
+        // ===== Layout superior: somente controles da sessão =====
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         buttonsPanel.add(continueButton);
-        buttonsPanel.add(copyButton);
-        buttonsPanel.add(sendTextButton);
-        buttonsPanel.add(getTextButton);
-        buttonsPanel.add(getPositionButton);
-        buttonsPanel.add(getTextByPositionButton);
         buttonsPanel.add(abortButton);
 
-        JPanel fieldsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        fieldsPanel.add(new JLabel("Field:"));
-        fieldsPanel.add(fieldNameField);
-        fieldsPanel.add(new JLabel("Text:"));
-        fieldsPanel.add(textField);
-        fieldsPanel.add(directionCombo);
-        fieldsPanel.add(new JLabel("Size:"));
-        fieldsPanel.add(sizeField);
-        fieldsPanel.add(new JLabel("Row:"));
-        fieldsPanel.add(rowField);
-        fieldsPanel.add(new JLabel("Col:"));
-        fieldsPanel.add(colField);
+        JPanel northPanel = new JPanel(new BorderLayout());
+        northPanel.add(buttonsPanel, BorderLayout.WEST);
 
-        JPanel northPanel = new JPanel();
-        northPanel.setLayout(new BoxLayout(northPanel, BoxLayout.Y_AXIS));
-        northPanel.add(buttonsPanel);
-        northPanel.add(fieldsPanel);
-
-        // ===== Painel lateral de teclas =====
+        // ===== Painéis laterais: comandos do terminal + teclas =====
+        JPanel commandsPanel = createCommandsPanel();
         JPanel keysPanel = createKeysPanel(onKeyAction);
+        JPanel sidePanels = new JPanel(new BorderLayout());
+        //sidePanels.add(commandsPanel, BorderLayout.WEST); // <---------------------
+        sidePanels.add(keysPanel, BorderLayout.EAST);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.add(commandsPanel, BorderLayout.WEST); // <---------------------
         centerPanel.add(new JScrollPane(areaScreen), BorderLayout.CENTER);
-        centerPanel.add(keysPanel, BorderLayout.EAST);
+        centerPanel.add(sidePanels, BorderLayout.EAST);
+
 
         JPanel footerPanel = new JPanel(new BorderLayout());
-        footerPanel.add(statusBar, BorderLayout.NORTH);
         footerPanel.add(new JScrollPane(actionLogArea), BorderLayout.CENTER);
+        footerPanel.add(statusBar, BorderLayout.SOUTH);
 
         frame.add(northPanel, BorderLayout.NORTH);
         frame.add(centerPanel, BorderLayout.CENTER);
@@ -331,14 +323,145 @@ public class TerminalViewer {
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
-        frame.setSize(1160, 820);
-        frame.setMinimumSize(new Dimension(1020, 820));
+        //frame.setLocation(30, 30);
+        frame.setSize(1260, 820);
+        frame.setMinimumSize(new Dimension(1020, 860));
         frame.setResizable(true);
     }
 
     // -------------------------------------------------------------------------
     // Painel lateral
     // -------------------------------------------------------------------------
+    
+    
+    private static final int PANEL_WIDTH = 220;
+
+    private JPanel createCommandsPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 1, 0, 0, Color.GRAY),
+                BorderFactory.createEmptyBorder(6, 6, 6, 6)));
+        panel.setPreferredSize(new Dimension(PANEL_WIDTH, 0));
+
+        JComponent title = sectionLabel("Terminal Commands");
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(title);
+
+        // Largura total
+        addCommandField(panel, "Field:", fieldNameField);
+        addCommandField(panel, "Text:", textField);
+        addCommandField(panel, "Direction:", directionCombo);
+
+        // Largura fixa
+        addCommandField(panel, "Size:", sizeField, 50);
+        addCommandField(panel, "Row:", rowField, 50);
+        addCommandField(panel, "Col:", colField, 50);
+
+        panel.add(Box.createVerticalStrut(6));
+
+        for (JButton button : List.of(
+                copyButton,
+                sendTextButton,
+                getTextButton,
+                getPositionButton,
+                getTextByPositionButton)) {
+            addCommandButton(panel, button);
+        }
+
+        panel.add(Box.createVerticalGlue());
+        return panel;
+    }
+
+    /**
+     * Adiciona um label + campo empilhados, ambos alinhados à esquerda.
+     *
+     * @param fieldWidth largura desejada do campo; use -1 para ocupar toda a largura disponível.
+     */
+    private void addCommandField(JPanel panel, String labelText, JComponent field, int fieldWidth) {
+        JLabel label = new JLabel(labelText);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(label);
+
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        int height = field.getPreferredSize().height;
+        if (fieldWidth > 0) {
+            Dimension size = new Dimension(fieldWidth, height);
+            field.setPreferredSize(size);
+            field.setMinimumSize(size);
+            field.setMaximumSize(size);
+        } else {
+            field.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
+        }
+
+        panel.add(field);
+        panel.add(Box.createVerticalStrut(3));
+    }
+
+    private void addCommandField(JPanel panel, String labelText, JComponent field) {
+        addCommandField(panel, labelText, field, -1);
+    }
+
+    private void addCommandButton(JPanel panel, JButton button) {
+        button.setAlignmentX(Component.LEFT_ALIGNMENT);
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, BTN_SIZE.height));
+        panel.add(button);
+        panel.add(Box.createVerticalStrut(4));
+    }
+    
+    
+//    private JPanel createCommandsPanel() {
+//        JPanel panel = new JPanel();
+//        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+//        panel.setBorder(BorderFactory.createCompoundBorder(
+//                BorderFactory.createMatteBorder(0, 1, 0, 0, Color.GRAY),
+//                BorderFactory.createEmptyBorder(6, 6, 6, 6)));
+//        panel.setPreferredSize(new Dimension(160, 0));
+//
+//        panel.add(sectionLabel("Terminal Commands"));
+//        addCommandField(panel, "Field:", fieldNameField);
+//        addCommandField(panel, "Text:", textField);
+//        addCommandField(panel, "Direction:", directionCombo);
+//
+//        JPanel coordinatesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+//        coordinatesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+//        coordinatesPanel.add(new JLabel("Size:"));
+//        coordinatesPanel.add(sizeField);
+//        coordinatesPanel.add(new JLabel("Row:"));
+//        coordinatesPanel.add(rowField);
+//        coordinatesPanel.add(new JLabel("Col:"));
+//        coordinatesPanel.add(colField);
+//        panel.add(coordinatesPanel);
+//        panel.add(Box.createVerticalStrut(6));
+//
+//        addCommandButton(panel, copyButton);
+//        addCommandButton(panel, sendTextButton);
+//        addCommandButton(panel, getTextButton);
+//        addCommandButton(panel, getPositionButton);
+//        addCommandButton(panel, getTextByPositionButton);
+//        panel.add(Box.createVerticalGlue());
+//        return panel;
+//    }
+//
+//    private void addCommandField(JPanel panel, String labelText, JComponent field) {
+//        JLabel label = new JLabel(labelText);
+//        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+//        panel.add(label);
+//
+//        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+//        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, field.getPreferredSize().height));
+//        panel.add(field);
+//        panel.add(Box.createVerticalStrut(3));
+//    }
+//
+//    private void addCommandButton(JPanel panel, JButton button) {
+//        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+//        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, BTN_SIZE.height));
+//        panel.add(button);
+//        panel.add(Box.createVerticalStrut(4));
+//    }
+
     private JPanel createKeysPanel(Consumer<String> onKeyAction) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
