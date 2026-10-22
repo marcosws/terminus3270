@@ -7,7 +7,7 @@
   <version>0.5</version>
   <packaging>jar</packaging>
 
-  <name>terminus3270</name>
+  <name>Terminus 3270</name>
   <url>http://maven.apache.org</url>
   <!-- 
 	  <name>mf3270</name>

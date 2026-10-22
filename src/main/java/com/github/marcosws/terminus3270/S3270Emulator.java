@@ -718,6 +718,9 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
         this.closeViewer();
     }
     
+    /* === Handles Methods ======================================================================================== */
+    
+    
     @Override
     protected void handleSendTextFromViewer(String field, String text, String direction) {
         logger.info("Viewer SendText → field='{}', text='{}', direction='{}'", field, text, direction);
@@ -851,6 +854,22 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
         } finally {
             closeViewer();
         }
+    }
+    
+    @Override
+    protected String handleGetPositionAfterFieldFromViewer(String fieldLabel) {
+        Optional<CursorPosition> posOpt = getPositionField(getScreen(), fieldLabel);
+        if (posOpt.isEmpty()) {
+            throw new S3270EmulatorException("Field '" + fieldLabel + "' not found in screen.");
+        }
+        CursorPosition pos = posOpt.get();
+        return pos.getRow() + "," + pos.getCol();
+    }
+
+    @Override
+    protected void handleSendTextByPositionFromViewer(Integer row, Integer col, String text) {
+        logger.info("Viewer SendTextByPosition → row={}, col={}, text='{}'", row, col, text);
+        moveAndSendString(row - 1, col - 1, text);
     }
 
 }

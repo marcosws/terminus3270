@@ -62,6 +62,23 @@ public class Main {
 }
 ```
 
+## Terminal Viewer
+
+Open the interactive screen viewer by creating the emulator in `VIEWER_MODE`:
+
+```java
+S3270Session session = new S3270Session();
+S3270Emulator emulator = new S3270Emulator(session, EmulatorMode.VIEWER_MODE);
+emulator.getSession().connect("host", "23");
+
+// ... script
+
+// Pauses the script until the user clicks "Continue" in the TerminalViewer.
+emulator.pauseScript(); // It only works in EmulatorMode.VIEWER_MODE.
+
+```
+
+
 ## Main Methods
 
 ### Session and Viewer

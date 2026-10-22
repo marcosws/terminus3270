@@ -41,7 +41,9 @@ public class TerminalViewer {
     private final JButton continueButton;
     private final JButton copyButton;
     private final JButton sendTextButton;
+    private final JButton sendTextByPositionButton;
     private final JButton getPositionButton;
+    private final JButton getPositionAfterFieldButton;
     private final JButton getTextButton;
     private final JButton getTextByPositionButton;
     private final JButton abortButton;
@@ -66,14 +68,16 @@ public class TerminalViewer {
      * @param onAbortSession      encerra sessão + fecha viewer
      */
     public TerminalViewer(Runnable onContinue,
-                          TriConsumer<String, String, String> onSendText,
-                          Function<String, String> onGetCursor,
-                          TriFunction<String, Integer, String, String> onGetText,
-                          TriFunction<Integer, Integer, Integer, String> onGetTextByCursor,
-                          Consumer<String> onKeyAction,
-                          Runnable onAbortSession) {
+            TriConsumer<String, String, String> onSendText,
+            Function<String, String> onGetCursor,
+            Function<String, String> onGetPositionAfterField,
+            TriFunction<String, Integer, String, String> onGetText,
+            TriFunction<Integer, Integer, Integer, String> onGetTextByCursor,
+            TriConsumer<Integer, Integer, String> onSendTextByPosition,
+            Consumer<String> onKeyAction,
+            Runnable onAbortSession) {
 
-        frame = new JFrame("Terminal 3270 Viewer");
+        frame = new JFrame("Terminus 3270 - Terminal Viewer");
         
         List<Image> icons = new ArrayList<>();
         addIcons(icons, "/icons/terminus3270_16.png");
@@ -282,6 +286,63 @@ public class TerminalViewer {
                 }
             }
         });
+        
+        getPositionAfterFieldButton = createButton("Get Position After Field");
+        getPositionAfterFieldButton.setToolTipText(
+                "Posição após o label (getPositionField). Preenche Row: e Col:.");
+        getPositionAfterFieldButton.addActionListener(e -> {
+            String field = fieldNameField.getText().trim();
+            if (field.isEmpty()) {
+                warn("Informe o Field (label), ex: Username:");
+                return;
+            }
+            try {
+                setStatus("Getting position after field '" + field + "'...");
+                recordAction("Get Position After Field", "field='" + field + "'");
+
+                String coords = onGetPositionAfterField.apply(field); // "row,col"
+                String[] parts = coords.split("\\s*,\\s*");
+                if (parts.length < 2) {
+                    throw new IllegalArgumentException("Resposta de posição inválida: '" + coords + "'");
+                }
+
+                String rowValue = parts[0].trim();
+                String colValue = parts[1].trim();
+                rowField.setText(rowValue);
+                colField.setText(colValue);
+                updatePositionDependentButtons();
+
+                setStatus("Position After Field → Row: " + rowValue + "  Col: " + colValue);
+                recordAction("Get Position After Field",
+                        "field='" + field + "'; position='row=" + rowValue + ", col=" + colValue + "'");
+            } catch (Exception ex) {
+                setStatus("Error: " + ex.getMessage());
+                error(ex.getMessage());
+            }
+        });
+        
+        sendTextByPositionButton = createButton("Send Text By Position");
+        sendTextByPositionButton.setToolTipText(
+                "Envia Text em Row:/Col: via moveAndSendString. Use após Get Position After Field.");
+        sendTextByPositionButton.setEnabled(false);
+        sendTextByPositionButton.addActionListener(e -> {
+            Integer row = parsePositiveInt(rowField.getText().trim(), "Row");
+            Integer col = parsePositiveInt(colField.getText().trim(), "Col");
+            String textToSend = textField.getText();
+            if (row == null || col == null) return;
+            try {
+                setStatus("Sending text at (" + row + "," + col + ")...");
+                recordAction("Send Text By Position",
+                        "row=" + row + "; col=" + col + "; text='" + textToSend + "'");
+                onSendTextByPosition.accept(row, col, textToSend);
+                setStatus("Text sent at Row: " + row + "  Col: " + col);
+                recordAction("Send Text By Position",
+                        "row=" + row + "; col=" + col + "; text='" + textToSend + "'; result='sent'");
+            } catch (Exception ex) {
+                setStatus("Error: " + ex.getMessage());
+                error(ex.getMessage());
+            }
+        });
 
         DocumentListener coordListener = new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { updateGetTextByCursorEnabled(); }
@@ -363,8 +424,10 @@ public class TerminalViewer {
         for (JButton button : List.of(
                 copyButton,
                 sendTextButton,
+                sendTextByPositionButton,       // NOVO
                 getTextButton,
                 getPositionButton,
+                getPositionAfterFieldButton,    // NOVO
                 getTextByPositionButton)) {
             addCommandButton(panel, button);
         }
@@ -410,58 +473,6 @@ public class TerminalViewer {
         panel.add(Box.createVerticalStrut(4));
     }
     
-    
-//    private JPanel createCommandsPanel() {
-//        JPanel panel = new JPanel();
-//        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-//        panel.setBorder(BorderFactory.createCompoundBorder(
-//                BorderFactory.createMatteBorder(0, 1, 0, 0, Color.GRAY),
-//                BorderFactory.createEmptyBorder(6, 6, 6, 6)));
-//        panel.setPreferredSize(new Dimension(160, 0));
-//
-//        panel.add(sectionLabel("Terminal Commands"));
-//        addCommandField(panel, "Field:", fieldNameField);
-//        addCommandField(panel, "Text:", textField);
-//        addCommandField(panel, "Direction:", directionCombo);
-//
-//        JPanel coordinatesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-//        coordinatesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-//        coordinatesPanel.add(new JLabel("Size:"));
-//        coordinatesPanel.add(sizeField);
-//        coordinatesPanel.add(new JLabel("Row:"));
-//        coordinatesPanel.add(rowField);
-//        coordinatesPanel.add(new JLabel("Col:"));
-//        coordinatesPanel.add(colField);
-//        panel.add(coordinatesPanel);
-//        panel.add(Box.createVerticalStrut(6));
-//
-//        addCommandButton(panel, copyButton);
-//        addCommandButton(panel, sendTextButton);
-//        addCommandButton(panel, getTextButton);
-//        addCommandButton(panel, getPositionButton);
-//        addCommandButton(panel, getTextByPositionButton);
-//        panel.add(Box.createVerticalGlue());
-//        return panel;
-//    }
-//
-//    private void addCommandField(JPanel panel, String labelText, JComponent field) {
-//        JLabel label = new JLabel(labelText);
-//        label.setAlignmentX(Component.LEFT_ALIGNMENT);
-//        panel.add(label);
-//
-//        field.setAlignmentX(Component.LEFT_ALIGNMENT);
-//        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, field.getPreferredSize().height));
-//        panel.add(field);
-//        panel.add(Box.createVerticalStrut(3));
-//    }
-//
-//    private void addCommandButton(JPanel panel, JButton button) {
-//        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-//        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, BTN_SIZE.height));
-//        panel.add(button);
-//        panel.add(Box.createVerticalStrut(4));
-//    }
-
     private JPanel createKeysPanel(Consumer<String> onKeyAction) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -562,10 +573,15 @@ public class TerminalViewer {
         return btn;
     }
 
-    private void updateGetTextByCursorEnabled() {
+    private void updatePositionDependentButtons() {
         boolean ok = !rowField.getText().trim().isEmpty()
                   && !colField.getText().trim().isEmpty();
         getTextByPositionButton.setEnabled(ok);
+        sendTextByPositionButton.setEnabled(ok);
+    }
+
+    private void updateGetTextByCursorEnabled() {
+        updatePositionDependentButtons();
     }
 
     private Integer parsePositiveInt(String value, String name) {
