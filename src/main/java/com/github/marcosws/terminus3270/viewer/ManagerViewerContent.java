@@ -27,13 +27,16 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	
 	protected void showViewer() {
 		if (emulatorMode == EmulatorMode.VIEWER_MODE) {
-			terminalViewer = new TerminalViewer(this::continueScreen,
-                    this::handleSendTextFromViewer,
-                    this::handleGetCursorFromViewer,
-                    this::handleGetTextFromViewer,
-                    this::handleGetTextByCursorFromViewer,
-                    this::handleKeyFromViewer,
-                    this::handleAbortSessionFromViewer);
+			terminalViewer = new TerminalViewer(
+			        this::continueScreen,
+			        this::handleSendTextFromViewer,
+			        this::handleGetCursorFromViewer,
+			        this::handleGetPositionAfterFieldFromViewer, 
+			        this::handleGetTextFromViewer,
+			        this::handleGetTextByCursorFromViewer,
+			        this::handleSendTextByPositionFromViewer,
+			        this::handleKeyFromViewer,
+			        this::handleAbortSessionFromViewer);
 			terminalViewer.show();
 			setStatus("Viewer ready");
 		}
@@ -67,6 +70,16 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	}
 
 	protected void handleAbortSessionFromViewer() {
+	    // sobrescrito no S3270Emulator
+	}
+	
+	/** fieldLabel → "row,col" (posição após o label — getPositionField) */
+	protected String handleGetPositionAfterFieldFromViewer(String fieldLabel) {
+	    return "0,0";
+	}
+
+	/** (row, col, text) — Send Text By Position */
+	protected void handleSendTextByPositionFromViewer(Integer row, Integer col, String text) {
 	    // sobrescrito no S3270Emulator
 	}
 	
