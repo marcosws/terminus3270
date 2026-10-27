@@ -4,7 +4,7 @@
 
   <groupId>com.github.marcosws</groupId>
   <artifactId>terminus3270</artifactId>
-  <version>0.5</version>
+  <version>1.0.0</version>
   <packaging>jar</packaging>
 
   <name>Terminus 3270</name>

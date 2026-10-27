@@ -1,6 +1,7 @@
 package com.github.marcosws.terminus3270.integration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -48,9 +49,29 @@ public class EmulatorIntegrationTest {
 	    session.quit();
 	}
 	
+    @Test
+    @DisplayName("Teste de conexão com o mainframe")
+    void testConnectToMainframeWithSuccess() {
+        assertTrue(session.isConnected());
+    }
+
+    @Test
+    @DisplayName("Teste de desconexão do mainframe")
+    void testDisconnectFromMainframeWithSuccess() {
+        session.disconnect();
+        assertFalse(session.isConnected());
+    }
+
+    @Test
+    @DisplayName("Teste de finalização da sessão")
+    void testQuitSessionWithSuccess() {
+        session.quit();
+        assertFalse(session.isConnected());
+    }
+	
 	
 	@Test
-	@DisplayName("Mainframe navigation logon test successful")
+	@DisplayName("Testing sendTextByField with Tab and Enter")
 	void testNavigationMainframeLogonWithSuccess() {
 		
 		emulator.sendTextByField("Userid:", "TESTE");
@@ -62,7 +83,7 @@ public class EmulatorIntegrationTest {
 	}
 	
 	@Test
-	@DisplayName("Mainframe navigation Get Saldo test successful")
+	@DisplayName("Navigation test and validation of getTextBeforeField")
 	void testNavigationMainframeGetSaldoWithSuccess() {
 		
 		emulator.sendTextByField("Userid:", "TESTE");
@@ -78,7 +99,7 @@ public class EmulatorIntegrationTest {
 	}
 	
 	@Test
-	@DisplayName("Mainframe navigation return Menu test successful")
+	@DisplayName("Fx key test (press PF)")
 	void testNavigationMainframeReturnMenuWithSuccess() {
 		
 		emulator.sendTextByField("Userid:", "TESTE");
@@ -92,5 +113,18 @@ public class EmulatorIntegrationTest {
 		assertTrue(emulator.asciiScreen().contains("MENU PRINCIPAL"));
 		
 	}
+	
+
+    @Test
+    @DisplayName("Teste de navegação usando teclas PF com sucesso")
+    void testNavigationUsingPFKeysWithSuccess() {
+        emulator.sendTextByField("Userid:", "TESTE");
+        emulator.tab();
+        emulator.sendTextByField("Password:", "1234");
+        emulator.enter();
+        emulator.pressPF(PFKey.PF1);
+        assertTrue(emulator.asciiScreen().contains("MENU PRINCIPAL"));
+    }
 
 }
+
