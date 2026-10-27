@@ -208,8 +208,8 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	        );
 	    }
 	    CursorPosition pos = posOpt.get();
-	    int row = pos.getRow() - 1;
-	    int col = pos.getCol() - 1;
+	    int row = pos.getRow();
+	    int col = pos.getCol();
 	    return moveAndSendString(row, col, text);
 	}
 	
@@ -262,7 +262,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 		logger.info("Moving cursor to position (row: {}, col: {}) and sending text '{}'", row, col, text);
 		StringBuilder returnCommand = new StringBuilder();
 		returnCommand.append("\n");
-		returnCommand.append(moveCursor(row, col)).append("\n");
+		returnCommand.append(moveCursor(row - 1, col - 1)).append("\n");
 		returnCommand.append(sendString(text));
 		return returnCommand.toString();
 		
@@ -869,7 +869,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
     @Override
     protected void handleSendTextByPositionFromViewer(Integer row, Integer col, String text) {
         logger.info("Viewer SendTextByPosition → row={}, col={}, text='{}'", row, col, text);
-        moveAndSendString(row - 1, col - 1, text);
+        moveAndSendString(row, col, text);
     }
-
+    
 }
