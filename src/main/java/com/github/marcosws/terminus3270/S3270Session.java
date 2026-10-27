@@ -168,12 +168,17 @@ public class S3270Session implements AutoCloseable {
 	 * Disconnects from the s3270 session by sending the "Disconnect" command to the
 	 * s3270 process and returns the response from the process after sending the command.
 	 * @return The response from the s3270 process after sending the "Disconnect" command
-	 * @throws S3270SessionException If there is an error sending the disconnect command or
 	 * if the session is not properly initialized
 	 */
 	public String disconnect() {
-		logger.info("Disconnecting s3270 session");
-		return sendCommand("Disconnect");
+		try {
+			logger.info("Disconnecting s3270 session");
+			return sendCommand("Disconnect");
+		}
+		catch(S3270SessionException ignore) {
+			logger.info("Disconnected s3270 session");
+			return "";
+		}
 	}
 	
 	/**
@@ -187,8 +192,13 @@ public class S3270Session implements AutoCloseable {
 	 */
     public boolean isConnected() {
 		logger.info("Checking if s3270 session is connected");
-		checkSession();
-		return sendCommand("Query(ConnectionState)").contains("connected-3270");
+		try {
+			checkSession();
+			return sendCommand("Query(ConnectionState)").contains("connected-3270");
+		}
+		catch (S3270SessionException ignore) {
+			return false;
+		}
 	}
 	
     public String sendCommand(String command) {
