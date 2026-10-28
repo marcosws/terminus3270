@@ -2,19 +2,38 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.github.marcosws</groupId>
+  <groupId>io.github.marcosws</groupId>
   <artifactId>terminus3270</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
 
   <name>Terminus 3270</name>
-  <url>http://maven.apache.org</url>
-  <!-- 
-	  <name>mf3270</name>
-  <description>Java library for mainframe 3270 terminal automation via s3270</description>
-  <url>https://github.com/marcosws/mf3270</url>
-	
-  -->
+  <description>Java library for automating IBM 3270 terminals via s3270 (x3270)</description>
+  <url>https://github.com/marcosws/terminus3270</url>
+  
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  
+  <developers>
+    <developer>
+      <id>marcosws</id>
+      <name>Marcos Willian de Souza</name>
+      <url>https://github.com/marcosws</url>
+    </developer>
+  </developers>
+  
+  <scm>
+    <connection>scm:git:git://github.com/marcosws/terminus3270.git</connection>
+    <developerConnection>scm:git:ssh://github.com:marcosws/terminus3270.git</developerConnection>
+    <url>https://github.com/marcosws/terminus3270</url>
+  </scm>
+  
+  
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.target>11</maven.compiler.target>
@@ -73,4 +92,85 @@
 	</dependency>
 	
   </dependencies>
+  
+    <build>
+    <plugins>
+      <!-- Compilação Java 11 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>11</release>
+        </configuration>
+      </plugin>
+
+      <!-- JAR de sources (obrigatório no Central) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- JAR de javadoc (obrigatório no Central) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.11.2</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <!-- evita falha se o Javadoc tiver warnings -->
+          <doclint>none</doclint>
+          <failOnError>false</failOnError>
+        </configuration>
+      </plugin>
+
+      <!-- Assinatura GPG (obrigatória) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>3.2.7</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Publicação no Central Portal -->
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <version>0.12.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <publishingServerId>central</publishingServerId>
+          <!-- true = publica automaticamente após validação -->
+          <autoPublish>true</autoPublish>
+          <!-- espera a validação terminar no deploy -->
+          <waitUntil>published</waitUntil>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  
 </project>
