@@ -32,6 +32,9 @@ public class TerminalViewer {
 
     private static final Dimension BTN_SIZE = new Dimension(158, 30);
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    
+    private static final String FONT_TYPE_LINUX = "Monospaced";
+    private static final String FONT_TYPE_WINDOWS = "Consolas";
 
     private final JFrame frame;
     private final JTextArea areaScreen;
@@ -98,8 +101,11 @@ public class TerminalViewer {
         }
 
         // ===== Tela 3270 =====
+        String osName = System.getProperty("os.name").toLowerCase();
+        String fontType = (osName.contains("win") ? FONT_TYPE_WINDOWS : FONT_TYPE_LINUX);
+        
         areaScreen = new JTextArea(28, 84);
-        areaScreen.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        areaScreen.setFont(new Font(fontType, Font.PLAIN, 12));
         areaScreen.setEditable(false);
         areaScreen.setFocusable(true);
         areaScreen.setBackground(Color.BLACK);
