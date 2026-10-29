@@ -40,7 +40,8 @@ public class TerminalViewer {
 
     private final JButton continueButton;
     private final JButton copyButton;
-    private final JButton sendTextButton;
+    private final JButton sendTextOnlyButton;
+    private final JButton sendTextByFieldButton;
     private final JButton sendTextByPositionButton;
     private final JButton getPositionButton;
     private final JButton getPositionAfterFieldButton;
@@ -75,6 +76,7 @@ public class TerminalViewer {
      */
     public TerminalViewer(Runnable onContinue,
             TriConsumer<String, String, String> onSendText,
+            Consumer<String> onSendTextOnly,
             Function<String, String> onGetCursor,
             Function<String, String> onGetPositionAfterField,
             TriFunction<String, Integer, String, String> onGetText,
@@ -167,9 +169,29 @@ public class TerminalViewer {
             setStatus("Screen copied to clipboard");
         });
 
-        sendTextButton = createButton("Send Text");
-        sendTextButton.setToolTipText("Send text to the terminal; specify the Field: and the Text: - Ex: Field: User:  Text: ibmuser");
-        sendTextButton.addActionListener(e -> {
+        
+        sendTextOnlyButton = createButton("Send Text");
+        sendTextOnlyButton.setToolTipText("Send Text Only in Default Cursor Position");
+        sendTextOnlyButton.addActionListener(e ->{
+        	String text = textField.getText();
+            if (text.isEmpty()) {
+                warn("Informe o Text (text).");
+                return;
+            }
+            try {
+                setStatus("Sending Text '" + text + "'");
+                recordAction("Send Text", "text='" + text + "';'");
+                onSendTextOnly.accept(text);
+                setStatus("Text sent to '" + text + "'");
+            } catch (Exception ex) {
+                setStatus("Error: " + ex.getMessage());
+                error(ex.getMessage());
+            }
+        });
+        
+        sendTextByFieldButton = createButton("Send Text By Field");
+        sendTextByFieldButton.setToolTipText("Send text to the terminal; specify the Field: and the Text: - Ex: Field: User:  Text: ibmuser");
+        sendTextByFieldButton.addActionListener(e -> {
             String field = fieldNameField.getText().trim();
             String text = textField.getText();
             String direction = (String) directionCombo.getSelectedItem();
@@ -437,7 +459,8 @@ public class TerminalViewer {
 
         for (JButton button : List.of(
                 copyButton,
-                sendTextButton,
+                sendTextOnlyButton,
+                sendTextByFieldButton,
                 sendTextByPositionButton,       // NOVO
                 getTextButton,
                 getPositionButton,

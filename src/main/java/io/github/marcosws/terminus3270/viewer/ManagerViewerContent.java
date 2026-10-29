@@ -30,6 +30,7 @@ public abstract class ManagerViewerContent implements IScreenContent {
 			terminalViewer = new TerminalViewer(
 			        this::continueScreen,
 			        this::handleSendTextFromViewer,
+			        this::handleSendOnlyTextFromViewer,
 			        this::handleGetCursorFromViewer,
 			        this::handleGetPositionAfterFieldFromViewer, 
 			        this::handleGetTextFromViewer,
@@ -81,6 +82,10 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	/** (row, col, text) — Send Text By Position */
 	protected void handleSendTextByPositionFromViewer(Integer row, Integer col, String text) {
 	    // sobrescrito no S3270Emulator
+	}
+	/** text - Send Only Text */
+	protected void handleSendOnlyTextFromViewer(String text) {
+		
 	}
 	
 	protected final void pauseScreenViewer() {
