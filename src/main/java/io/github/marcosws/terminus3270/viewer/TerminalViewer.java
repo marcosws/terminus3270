@@ -42,6 +42,8 @@ public class TerminalViewer {
     private final JTextArea actionLogArea;
 
     private final JButton continueButton;
+    private final JButton copySelectedToFieldButton;
+    private final JButton copySelectedToTextButton;
     private final JButton copyButton;
     private final JButton sendTextOnlyButton;
     private final JButton sendTextByFieldButton;
@@ -50,6 +52,7 @@ public class TerminalViewer {
     private final JButton getPositionAfterFieldButton;
     private final JButton getTextButton;
     private final JButton getTextByPositionButton;
+    private final JButton clearFieldsButton;
     private final JButton abortButton;
 
     private final JTextField fieldNameField;
@@ -147,7 +150,7 @@ public class TerminalViewer {
         directionCombo.setPreferredSize(new Dimension(120, 20));
 
         sizeField = new JTextField(4);
-        sizeField.setText("10");
+        sizeField.setText("20");
         sizeField.setToolTipText("Tamanho para Get Text / Get Text By Cursor");
 
         rowField = new JTextField(4);
@@ -165,8 +168,39 @@ public class TerminalViewer {
             onContinue.run();
         });
 
-        copyButton = createButton("Copy Text");
-        copyButton.setToolTipText("Copy text to the system clipboard");
+        
+        copySelectedToFieldButton = createButton("Copy Selected To Field");
+        copySelectedToFieldButton.setToolTipText("Copy text selected from screen to Field");
+        copySelectedToFieldButton.addActionListener(e ->{
+        	String selectedText = areaScreen.getSelectedText();
+            if (selectedText != null) {
+            	fieldNameField.setText(selectedText);
+                recordAction("Copy Text", "text='" + selectedText + "' from screen to Field;'");
+                setStatus("Text copied '" + selectedText + "' from screen to Field");
+            }
+            else {
+            	warn("Select text in Screen");
+            }
+        });
+        
+        
+        copySelectedToTextButton = createButton("Copy Selected To Text");
+        copySelectedToTextButton.setToolTipText("Copy text selected from screen to Text");
+        copySelectedToTextButton.addActionListener(e ->{
+        	String selectedText = areaScreen.getSelectedText();
+            if (selectedText != null) {
+                textField.setText(selectedText);
+                recordAction("Copy Text", "text='" + selectedText + "' from screen to Text;'");
+                setStatus("Text copied '" + selectedText + "' from screen to Text");
+            }
+            else {
+            	warn("Select text in Screen");
+            }
+        });
+        
+        
+        copyButton = createButton("Copy Text Screen (Clipboard)");
+        copyButton.setToolTipText("Copy text from screen to the system clipboard");
         copyButton.addActionListener(e -> {
             String screenText = areaScreen.getText();
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -312,12 +346,9 @@ public class TerminalViewer {
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE);
             if (opt == JOptionPane.YES_OPTION) {
-                setStatus("Aborting session...");
-                recordAction("Abort Session", "confirmed=true");
                 try {
                     onAbortSession.run();
                 } catch (Exception ex) {
-                    setStatus("Error: " + ex.getMessage());
                     close();
                 }
             }
@@ -379,6 +410,18 @@ public class TerminalViewer {
                 error(ex.getMessage());
             }
         });
+        
+        clearFieldsButton = createButton("Clear Field`s");
+        clearFieldsButton.setToolTipText("Clear Fields: Field, Text, Row, Col and Size reset value 20");
+        clearFieldsButton.addActionListener(e -> {
+            fieldNameField.setText("");
+            textField.setText("");
+            sizeField.setText("20");
+            rowField.setText("");
+            colField.setText("");
+        });
+        
+        
 
         DocumentListener coordListener = new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { updateGetTextByCursorEnabled(); }
@@ -391,11 +434,13 @@ public class TerminalViewer {
         // ===== Layout superior: somente controles da sessão =====
         commandsButton = createButton("Commands");
         commandsButton.setToolTipText("Abre a janela com os comandos do terminal (Send Text, Get Text, etc.)");
+        commandsButton.setForeground(new Color(0, 0, 160));
         commandsButton.addActionListener(e -> showCommandsWindow());
         
         
         keysButton = createButton("Keys");
         keysButton.setToolTipText("Abre a janela com as teclas PF, PA, Enter, Tab, etc.");
+        keysButton.setForeground(new Color(0, 0, 160));
         keysButton.addActionListener(e -> showKeysWindow());
 
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
@@ -465,13 +510,16 @@ public class TerminalViewer {
 
         for (JButton button : List.of(
                 copyButton,
+                copySelectedToFieldButton,
+                copySelectedToTextButton,
                 sendTextOnlyButton,
                 sendTextByFieldButton,
                 sendTextByPositionButton,       // NOVO
                 getTextButton,
                 getPositionButton,
                 getPositionAfterFieldButton,    // NOVO
-                getTextByPositionButton)) {
+                getTextByPositionButton,
+                clearFieldsButton)) {
             addCommandButton(panel, button);
         }
 

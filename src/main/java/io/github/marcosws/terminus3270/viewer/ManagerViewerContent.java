@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import io.github.marcosws.terminus3270.components.ScreenContent;
 import io.github.marcosws.terminus3270.enums.EmulatorMode;
+import io.github.marcosws.terminus3270.exceptions.SessionAbortedException;
 import io.github.marcosws.terminus3270.interfaces.IScreenContent;
 
 public abstract class ManagerViewerContent implements IScreenContent {
@@ -14,6 +15,7 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	private TerminalViewer terminalViewer;
 	private EmulatorMode emulatorMode;
 	private boolean paused;
+	private volatile boolean aborted;
 	
 
 	
@@ -95,6 +97,11 @@ public abstract class ManagerViewerContent implements IScreenContent {
 			return;
 		}
 		
+		// Se já foi abortado antes de pausar, não espera Continue
+	    if (aborted) {
+	    	throw new SessionAbortedException("Session aborted by user");
+	    }
+		
 		synchronized (pauseLock) {
 			paused = true;
 			terminalViewer.setContinueEnabled(true);
@@ -109,7 +116,15 @@ public abstract class ManagerViewerContent implements IScreenContent {
 					throw new IllegalStateException("Interrupted while wanting for Continue",e);
 				}
 			}
+			if (terminalViewer != null) {
+	            terminalViewer.setContinueEnabled(false);
+	        }
 		}
+		
+		// Saiu do pause porque o usuário abortou → interrompe o script
+	    if (aborted) {
+	        throw new SessionAbortedException("Session aborted by user");
+	    }
 		
 	}
 	
@@ -119,9 +134,22 @@ public abstract class ManagerViewerContent implements IScreenContent {
 				return;
 			}
 			paused = false;
-			terminalViewer.setContinueEnabled(false);
+			if (terminalViewer != null) {
+				terminalViewer.setContinueEnabled(false);
+			}
 			pauseLock.notifyAll();
 		}
+	}
+	
+	/** Acorda a thread do script (Continue ou Abort). */
+	private void releasePause() {
+	    synchronized (pauseLock) {
+	        paused = false;
+	        if (terminalViewer != null) {
+	            terminalViewer.setContinueEnabled(false);
+	        }
+	        pauseLock.notifyAll();
+	    }
 	}
 	
 	protected void updateScreenViewer() {
@@ -142,7 +170,7 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	}
 	
 	protected void closeViewer() {
-		continueScreen();
+		releasePause();
 		if (terminalViewer != null) {
 			terminalViewer.close();
 			terminalViewer = null;
@@ -153,6 +181,15 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	    if (terminalViewer != null) {
 	        terminalViewer.setStatus(message);
 	    }
+	}
+	
+	/** Indica se o usuário pediu Abort Session no viewer. */
+	public boolean isAborted() {
+	    return aborted;
+	}
+
+	protected void markAborted() {
+	    aborted = true;
 	}
 	
 

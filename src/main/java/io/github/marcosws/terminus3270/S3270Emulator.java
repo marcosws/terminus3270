@@ -860,6 +860,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
     @Override
     protected void handleAbortSessionFromViewer() {
         logger.info("Abort Session requested from viewer");
+        markAborted();   // marca ANTES de liberar o pause
         try {
             if (session != null) {
                 try {
