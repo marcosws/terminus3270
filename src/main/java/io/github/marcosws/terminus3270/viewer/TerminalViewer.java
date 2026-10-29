@@ -58,6 +58,10 @@ public class TerminalViewer {
 
     private String lastScreen = "";
 
+    private JDialog keysDialog;
+    private final Consumer<String> onKeyActionRef;
+    private JButton keysButton;
+
     /**
      * @param onContinue          Continue
      * @param onSendText          (field, text, direction)
@@ -77,6 +81,8 @@ public class TerminalViewer {
             Consumer<String> onKeyAction,
             Runnable onAbortSession) {
 
+        this.onKeyActionRef = onKeyAction;
+
         frame = new JFrame("Terminus 3270 - Terminal Viewer");
         
         List<Image> icons = new ArrayList<>();
@@ -89,7 +95,7 @@ public class TerminalViewer {
 
         // ===== Tela 3270 =====
         areaScreen = new JTextArea(28, 84);
-        areaScreen.setFont(new Font("Monospaced", Font.PLAIN, 16));
+        areaScreen.setFont(new Font("Monospaced", Font.PLAIN, 12));
         areaScreen.setEditable(false);
         areaScreen.setFocusable(true);
         areaScreen.setBackground(Color.BLACK);
@@ -353,24 +359,24 @@ public class TerminalViewer {
         colField.getDocument().addDocumentListener(coordListener);
 
         // ===== Layout superior: somente controles da sessão =====
+        keysButton = createButton("Keys");
+        keysButton.setToolTipText("Abre a janela com as teclas PF, PA, Enter, Tab, etc.");
+        keysButton.addActionListener(e -> showKeysWindow());
+
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         buttonsPanel.add(continueButton);
+        buttonsPanel.add(keysButton);
         buttonsPanel.add(abortButton);
 
         JPanel northPanel = new JPanel(new BorderLayout());
         northPanel.add(buttonsPanel, BorderLayout.WEST);
 
-        // ===== Painéis laterais: comandos do terminal + teclas =====
+        // ===== Painel lateral: somente comandos (teclas em janela filha) =====
         JPanel commandsPanel = createCommandsPanel();
-        JPanel keysPanel = createKeysPanel(onKeyAction);
-        JPanel sidePanels = new JPanel(new BorderLayout());
-        //sidePanels.add(commandsPanel, BorderLayout.WEST); // <---------------------
-        sidePanels.add(keysPanel, BorderLayout.EAST);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
-        centerPanel.add(commandsPanel, BorderLayout.WEST); // <---------------------
+        centerPanel.add(commandsPanel, BorderLayout.WEST);
         centerPanel.add(new JScrollPane(areaScreen), BorderLayout.CENTER);
-        centerPanel.add(sidePanels, BorderLayout.EAST);
 
 
         JPanel footerPanel = new JPanel(new BorderLayout());
@@ -385,8 +391,8 @@ public class TerminalViewer {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
         //frame.setLocation(30, 30);
-        frame.setSize(1260, 820);
-        frame.setMinimumSize(new Dimension(1020, 860));
+        frame.setSize(980, 780);
+        frame.setMinimumSize(new Dimension(800, 600));
         frame.setResizable(true);
     }
 
@@ -473,6 +479,39 @@ public class TerminalViewer {
         panel.add(Box.createVerticalStrut(4));
     }
     
+    private void showKeysWindow() {
+        if (keysDialog != null && keysDialog.isDisplayable()) {
+            if (keysDialog.isVisible()) {
+                keysDialog.toFront();
+                return;
+            }
+            keysDialog.setVisible(true);
+            keysDialog.toFront();
+            return;
+        }
+
+        keysDialog = new JDialog(frame, "Terminal Keys", false);
+        keysDialog.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
+
+        List<Image> icons = frame.getIconImages();
+        if (icons != null && !icons.isEmpty()) {
+            keysDialog.setIconImages(icons);
+        }
+
+        JPanel keysPanel = createKeysPanel(onKeyActionRef);
+        keysDialog.setContentPane(keysPanel);
+        keysDialog.pack();
+        keysDialog.setMinimumSize(new Dimension(180, 520));
+        keysDialog.setSize(180, 640);
+
+        // Posiciona ao lado direito do viewer, se couber na tela
+        int x = frame.getX() + frame.getWidth() + 8;
+        int y = frame.getY();
+        keysDialog.setLocation(x, y);
+
+        keysDialog.setVisible(true);
+    }
+
     private JPanel createKeysPanel(Consumer<String> onKeyAction) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -595,26 +634,6 @@ public class TerminalViewer {
         }
     }
 
-    /**
-     * Sincroniza o campo de tamanho com o texto atual do campo de texto.
-     * Facilita o uso do Get Text By Position após obter a posição.
-     */
-//    private void syncSizeFromCurrentText() {
-//        String text = textField.getText();
-//        if (text != null) {
-//            sizeField.setText(String.valueOf(calculateFieldSize(text)));
-//        }
-//    }
-
-//    /**
-//     * Calcula o tamanho real do campo descontando 4 colunas da moldura.
-//     */
-//    private int calculateFieldSize(String text) {
-//        if (text == null) return 0;
-//        int len = text.length();
-//        return Math.max(0, len - 4);
-//    }
-
     private void warn(String msg) {
         setStatus(msg);
         JOptionPane.showMessageDialog(frame, msg, "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -665,6 +684,10 @@ public class TerminalViewer {
 
     public void close() {
         SwingUtilities.invokeLater(() -> {
+            if (keysDialog != null) {
+                keysDialog.dispose();
+                keysDialog = null;
+            }
             if (frame != null) frame.dispose();
         });
     }
