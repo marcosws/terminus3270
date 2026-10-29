@@ -214,6 +214,8 @@ public class S3270Session implements AutoCloseable {
 		logger.info("Sending command to s3270 session: {}", command);
 		checkSession();
 		
+		final boolean isQuit = "Quit".equalsIgnoreCase(command.trim());
+		
         try {
             writer.write(command);
             writer.newLine();
@@ -232,11 +234,19 @@ public class S3270Session implements AutoCloseable {
                     );
                 }
             }
+            if (isQuit) {
+                logger.debug("S3270 stream closed after Quit (expected)");
+                return response.toString();
+            }
             logger.error("S3270 stream closed unexpectedly while waiting for response to command: {}", command);
             throw new S3270SessionException("S3270 stream closed unexpectedly.");
         } 
         catch (IOException e) {
-        	logger.error("Error sending command: {}", command, e);
+        	if (isQuit) {
+                logger.debug("S3270 stream closed after Quit (expected)", e);
+                return "";
+            }
+            logger.error("Error sending command: {}", command, e);
             throw new S3270SessionException("Error sending command: " + command, e);
         }
 		
