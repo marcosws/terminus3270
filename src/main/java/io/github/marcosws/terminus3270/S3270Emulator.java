@@ -17,7 +17,11 @@ import io.github.marcosws.terminus3270.interfaces.IControlListener;
 import io.github.marcosws.terminus3270.viewer.ManagerViewerContent;
 
 /**
- * 3270Emulator is a class that provides high-level methods to interact with a 3270 terminal session. It uses an instance of S3270Session to send commands and receive responses from the host. The class includes methods to get the current screen in ASCII format, find the position of fields based on labels, send text to specific fields, and perform various actions like moving the cursor, pressing keys, and waiting for events. It abstracts the low-level details of communicating with the 3270 terminal and provides a more user-friendly interface for automation tasks.
+ * 3270Emulator is a class that provides high-level methods to interact with a 3270 terminal session. 
+ * It uses an instance of S3270Session to send commands and receive responses from the host. 
+ * The class includes methods to get the current screen in ASCII format, find the position of fields based on labels, 
+ * send text to specific fields, and perform various actions like moving the cursor, pressing keys, and waiting for events. 
+ * It abstracts the low-level details of communicating with the 3270 terminal and provides a more user-friendly interface for automation tasks.
  * @author Marcos Willian de Souza
  * @version 1.0.0
  * @since 2026-04
@@ -37,7 +41,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	
 	public S3270Emulator(S3270Session session, EmulatorMode emulatorMode) {
 		super(emulatorMode);
-		logger.info("Initializing S3270Emulator with provided session");
+		logger.info("Initializing S3270Emulator with provided session, Emulator Mode: {}", emulatorMode.name());
 		this.session = session;
 		this.session.addCloseListener(this);
 		this.showViewer();
@@ -884,6 +888,12 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
     protected void handleSendTextByPositionFromViewer(Integer row, Integer col, String text) {
         logger.info("Viewer SendTextByPosition → row={}, col={}, text='{}'", row, col, text);
         moveAndSendString(row, col, text);
+    }
+    
+    @Override
+    protected void handleSendOnlyTextFromViewer(String text) {
+    	logger.info("Viewer Send Text Only → text='{}'", text);
+    	sendString(text);
     }
     
 }
