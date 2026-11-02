@@ -78,6 +78,8 @@ emulator.pauseScript(); // It only works in EmulatorMode.VIEWER_MODE.
 
 ```
 
+![Terminus 3270](./images/terminus3270.png "Terminus 3270")
+
 
 ## Main Methods
 
