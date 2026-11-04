@@ -74,9 +74,9 @@ public class EmulatorIntegrationTest {
 	@DisplayName("Testing sendTextByField with Tab and Enter")
 	void testNavigationMainframeLogonWithSuccess() {
 		
-		emulator.sendTextByField("Userid:", "TESTE");
+		emulator.sendTextByLabel("Userid:", "TESTE");
 		emulator.tab();
-		emulator.sendTextByField("Password:", "1234");
+		emulator.sendTextByLabel("Password:", "1234");
 		emulator.enter();
 		assertTrue(emulator.asciiScreen().contains("MENU PRINCIPAL"));
 
@@ -86,15 +86,15 @@ public class EmulatorIntegrationTest {
 	@DisplayName("Navigation test and validation of getTextBeforeField")
 	void testNavigationMainframeGetSaldoWithSuccess() {
 		
-		emulator.sendTextByField("Userid:", "TESTE");
+		emulator.sendTextByLabel("Userid:", "TESTE");
 		emulator.tab();
-		emulator.sendTextByField("Password:", "1234");
+		emulator.sendTextByLabel("Password:", "1234");
 		emulator.enter();
 		String option = emulator.getTextBeforeField("- SALDO", 3);
-		emulator.sendTextByField("Opcao ==>", option.trim());
+		emulator.sendTextByLabel("Opcao ==>", option.trim());
 		emulator.enter();
 		assertTrue(emulator.asciiScreen().contains("CONSULTA DE SALDO"));
-		assertEquals("R$ 1.234,56", emulator.getTextByField("Saldo atual:", 18).trim());
+		assertEquals("R$ 1.234,56", emulator.getTextFromField("Saldo atual:", 18).trim());
 		
 	}
 	
@@ -102,12 +102,12 @@ public class EmulatorIntegrationTest {
 	@DisplayName("Fx key test (press PF)")
 	void testNavigationMainframeReturnMenuWithSuccess() {
 		
-		emulator.sendTextByField("Userid:", "TESTE");
+		emulator.sendTextByLabel("Userid:", "TESTE");
 		emulator.tab();
-		emulator.sendTextByField("Password:", "1234");
+		emulator.sendTextByLabel("Password:", "1234");
 		emulator.enter();
 		String option = emulator.getTextBeforeField("- SALDO", 5);
-		emulator.sendTextByField("Opcao ==>", option.trim());
+		emulator.sendTextByLabel("Opcao ==>", option.trim());
 		emulator.enter();
 		emulator.pressPF(PFKey.PF3);
 		assertTrue(emulator.asciiScreen().contains("MENU PRINCIPAL"));
@@ -118,9 +118,9 @@ public class EmulatorIntegrationTest {
     @Test
     @DisplayName("Teste de navegação usando teclas PF com sucesso")
     void testNavigationUsingPFKeysWithSuccess() {
-        emulator.sendTextByField("Userid:", "TESTE");
+        emulator.sendTextByLabel("Userid:", "TESTE");
         emulator.tab();
-        emulator.sendTextByField("Password:", "1234");
+        emulator.sendTextByLabel("Password:", "1234");
         emulator.enter();
         emulator.pressPF(PFKey.PF1);
         assertTrue(emulator.asciiScreen().contains("MENU PRINCIPAL"));

@@ -215,14 +215,14 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	 * the label is not found
 	 * @throws IOException if an I/O error occurs while sending commands or reading responses
 	 */    
-	public String sendTextByField(String field, String text) {
+	public String sendTextByLabel(String label, String text) {
 
-		logger.info("Sending text '{}' to field '{}' identified by label", text, field);
+		logger.info("Sending text '{}' to field '{}' identified by label", text, label);
 	    String screen = asciiScreen().replace("data:", "");
-	    Optional<CursorPosition> posOpt = getPositionField(screen, field);
+	    Optional<CursorPosition> posOpt = getPositionField(screen, label);
 	    if (posOpt.isEmpty()) {
 	        throw new S3270EmulatorException(
-	            "Field '" + field + "' not found in screen."
+	            "Field '" + label + "' not found in screen."
 	        );
 	    }
 	    CursorPosition pos = posOpt.get();
@@ -243,24 +243,24 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	 * the label is not found
 	 * @throws IOException if an I/O error occurs while sending commands or reading responses
 	 */
-	public String sendTextByField(String field, String text, int offsetRow, int offsetCol) {
+	public String sendTextByLabel(String label, String text, int offsetRow, int offsetCol) {
 
 		
-		logger.info("Sending text '{}' to field '{}' identified by label with offsets (row: {}, col: {})", text, field, offsetRow, offsetCol);
+		logger.info("Sending text '{}' to field '{}' identified by label with offsets (row: {}, col: {})", text, label, offsetRow, offsetCol);
 		String screen = asciiScreen().replaceAll("data:", "");
 		
-		Optional<CursorPosition> posOpt = getPositionField(screen, field);
+		Optional<CursorPosition> posOpt = getPositionField(screen, label);
 		
 	    if (posOpt.isEmpty()) {
 	        throw new S3270EmulatorException(
-	            "Field '" + field + "' not found in screen."
+	            "Field '" + label + "' not found in screen."
 	        );
 	    }
 	    
 	    CursorPosition pos = posOpt.get();
 		
 		int targetRow = (offsetRow >= 0 ? Math.abs(pos.getRow() - 1) + Math.abs(offsetRow) : Math.abs(pos.getRow() - 1) - Math.abs(offsetRow));
-		int targetCol = (offsetCol >= 0 ? Math.abs(pos.getCol() - 1) + Math.abs(offsetCol) : Math.abs(pos.getCol() - 1) - (field.length() + Math.abs(offsetCol)));
+		int targetCol = (offsetCol >= 0 ? Math.abs(pos.getCol() - 1) + Math.abs(offsetCol) : Math.abs(pos.getCol() - 1) - (label.length() + Math.abs(offsetCol)));
 
 		return moveAndSendString(targetRow, targetCol, text);
 		
@@ -631,14 +631,14 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	
 	
 	/**
-	 * GetTextByField(field, sizeText)
+	 * GetTextFromField(field, sizeText)
 	 * English: Gets text from the screen based on a field identified by a label. It first finds the position of the field using the label, and then retrieves the text starting from that position for a specified number of characters. The method assumes that the position is based on 1 (the first row and column are considered as 1) and that the sizeText does not exceed the line length from the specified column. It throws an exception if the label is not found on the screen.
 	 * @param field The text of the label that identifies the input field
 	 * @param sizeText The number of characters to be obtained starting from the field position
 	 * @return The text obtained from the screen based on the field position and size specified
 	 * @throws S3270SessionException if the label is not found on the screen
 	 */
-	public String getTextByField(String field, int sizeText) {
+	public String getTextFromField(String field, int sizeText) {
 		logger.info("Getting text from the screen based on field '{}' with size {}", field, sizeText);
 		CursorPosition position;
 		Optional<CursorPosition> posOpt = getPositionStartField(asciiScreen(), field);
@@ -678,17 +678,17 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	
 	
 	/**
-	 * GetTextBottonField(field, sizeText, offsetRow)
+	 * GetTextBelowField(field, sizeText, offsetRow)
 	 * English: Gets text from the screen that is located below a field identified by a label
 	 * It first finds the position of the field using the label, calculates the new row position by adding the offsetRow to the original row position, and then retrieves the text starting from that new position for a specified number of characters. The method assumes that the position is based on 1 (the first row and column are considered as 1) and that the sizeText does not exceed the line length from the original column. It throws an exception if the label is not found on the screen.
 	 * Example: if the screen contains "Username: user123" on line 5,
-	 * and you want to get the text located 2 rows below starting from the same column with a size of 10, you would call getTextBottonField("Username:", 10, 2) and it would return the text located at that position.
+	 * and you want to get the text located 2 rows below starting from the same column with a size of 10, you would call getTextBottomField("Username:", 10, 2) and it would return the text located at that position.
 	 * @param field
 	 * @param sizeText
 	 * @param offsetRow
 	 * @return
 	 */
-	public String getTextBottonField(String field, int sizeText, int offsetRow) {
+	public String getTextBelowField(String field, int sizeText, int offsetRow) {
 		logger.info("Getting text from the screen below field '{}' with size {} and row offset {}", field, sizeText, offsetRow);
 		Optional<CursorPosition> posOpt = getPositionStartField(asciiScreen(), field);
 		if (posOpt.isEmpty()) {
@@ -702,7 +702,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	}
 	
 	/**
-	 * GetTextTopField(field, sizeText, offsetRow)
+	 * GetTextAboveField(field, sizeText, offsetRow)
 	 * English: Gets text from the screen that is located above a field identified by a label. It first finds the position of the field using the label, calculates the new row position by subtracting the offsetRow from the original row position, and then retrieves the text starting from that new position for a specified number of characters. The method assumes that the position is based on 1 (the first row and column are considered as 1) and that the sizeText does not exceed the line length from the original column. It throws an exception if the label is not found on the screen.
 	 * Example: if the screen contains "Username: user123" on line 5, and you want to get the text located 2 rows above starting from the same column with a size of 10, you would call getTextTopField("Username:", 10, 2) and it would return the text located at that position.
 	 * @param field The text of the label that identifies the input field
@@ -711,7 +711,7 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 	 * @return The text obtained from the screen based on the calculated position above the field and size specified
 	 * @throws S3270EmulatorException if the label is not found on the screen
 	 */
-	public String getTextTopField(String field, int sizeText, int offsetRow) {
+	public String getTextAboveField(String field, int sizeText, int offsetRow) {
 		logger.info("Getting text from the screen above field '{}' with size {} and row offset {}", field, sizeText, offsetRow);
 
 		Optional<CursorPosition> posOpt = getPositionStartField(asciiScreen(), field);
@@ -745,19 +745,19 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 
         switch (direction) {
             case "Right Field":
-                sendTextByField(field, text);
+                sendTextByLabel(field, text);
                 break;
             case "Left Field":
-                sendTextByField(field, text, 0, -1);
+                sendTextByLabel(field, text, 0, -1);
                 break;
-            case "Top Field":
-                sendTextByField(field, text, -1, 0);
+            case "Above Field":
+                sendTextByLabel(field, text, -1, 0);
                 break;
-            case "Botton Field":
-                sendTextByField(field, text, 1, 0);
+            case "Below Field":
+                sendTextByLabel(field, text, 1, 0);
                 break;
             default:
-                sendTextByField(field, text);
+                sendTextByLabel(field, text);
         }
     }
 
@@ -767,19 +767,19 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
 
         switch (direction) {
             case "Right Field":
-                return getTextByField(field, size);
+                return getTextFromField(field, size);
 
             case "Left Field":
                 return getTextBeforeField(field, size);
 
-            case "Top Field":
-                return getTextTopField(field, size, 1);   // 1 linha acima
+            case "Above Field":
+                return getTextAboveField(field, size, 1);
 
-            case "Botton Field":
-                return getTextBottonField(field, size, 1); // 1 linha abaixo
+            case "Below Field":
+                return getTextBelowField(field, size, 1);
 
             default:
-                return getTextByField(field, size);
+                return getTextFromField(field, size);
         }
     }
     
@@ -789,15 +789,15 @@ public class S3270Emulator extends ManagerViewerContent implements IControlListe
         setStatus("Sending " + keyName + "...");
 
         switch (keyName) {
-            case "Enter"       : enter(); break;
-            case "Tab"         : tab(); break;
-            case "Home"        : home(); break;
-            case "Backspace"   : backspace(); break;
-            case "Clear"       : clear(); break;
-            case "Reset"       : reset(); break;
-            case "DeleteField" : deleteField(); break;
-            case "EraseEOF"    : eraseEOF(); break;
-            case "EraseInput"  : eraseInput(); break;
+            case "Enter"        : enter(); break;
+            case "Tab"          : tab(); break;
+            case "Home"         : home(); break;
+            case "Backspace"    : backspace(); break;
+            case "Clear"        : clear(); break;
+            case "Reset"        : reset(); break;
+            case "Delete Field" : deleteField(); break;
+            case "Erase EOF"    : eraseEOF(); break;
+            case "Erase Input"  : eraseInput(); break;
 
             // PF1 .. PF24
             case "PF1"  : pressPF(PFKey.PF1); break;
