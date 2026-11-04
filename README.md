@@ -8,6 +8,10 @@ The **terminus3270** project provides an object-oriented API for controlling 327
 
 The main class is `S3270Emulator`, which uses an instance of `S3270Session` to communicate with the terminal.
 
+## Version
+
+ - 1.0.2
+
 ## Key Features
 
 - Retrieve the screen in ASCII format
@@ -103,17 +107,17 @@ emulator.pauseScript(); // It only works in EmulatorMode.VIEWER_MODE.
 | `getPositionField(String screen, String field)` | Finds a label in a screen string and returns the field position as an `Optional<CursorPosition>`. Rows and columns in the returned position are 1-based. |
 | `getPositionField(ScreenContent screen, String field)` | Finds a label in a `ScreenContent` object and returns the field position as an `Optional<CursorPosition>`. |
 | `getText(CursorPosition position, int sizeText)` | Extracts a specified number of characters from the screen, starting at the supplied position. |
-| `getTextByField(String field, int sizeText)` | Finds a field by its label and extracts text starting at the calculated field position. |
+| `getTextFromField(String field, int sizeText)` | Finds a field by its label and extracts text starting at the calculated field position. |
 | `getTextBeforeField(String field, int sizeText)` | Extracts text positioned before a field identified by its label. |
-| `getTextBottomField(String field, int sizeText, int offsetRow)` | Extracts text below a field identified by its label, using the specified row offset. The method name is `getTextBottomField` in the current API. |
-| `getTextTopField(String field, int sizeText, int offsetRow)` | Extracts text above a field identified by its label, using the specified row offset. |
+| `getTextBelowField(String field, int sizeText, int offsetRow)` | Extracts text below a field identified by its label, using the specified row offset. The method name is `getTextBottomField` in the current API. |
+| `getTextAboveField(String field, int sizeText, int offsetRow)` | Extracts text above a field identified by its label, using the specified row offset. |
 
 ### Text Entry and Cursor Navigation
 
 | Method | Description |
 |---|---|
-| `sendTextByField(String field, String text)` | Finds a field by its label, moves the cursor to its calculated position, and sends the text. |
-| `sendTextByField(String field, String text, int offsetRow, int offsetCol)` | Finds a field by its label, applies row and column offsets, then sends the text at the resulting position. |
+| `sendTextByLabel(String field, String text)` | Finds a field by its label, moves the cursor to its calculated position, and sends the text. |
+| `sendTextByLabel(String field, String text, int offsetRow, int offsetCol)` | Finds a field by its label, applies row and column offsets, then sends the text at the resulting position. |
 | `moveAndSendString(int row, int col, String text)` | Moves the cursor to the specified position and sends text. |
 | `moveCursor(int row, int col)` | Moves the cursor to the specified row and column. |
 | `moveCursor(CursorPosition position)` | Moves the cursor to the row and column stored in a `CursorPosition` object. |
