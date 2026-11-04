@@ -8,6 +8,10 @@ The **terminus3270** project provides an object-oriented API for controlling 327
 
 The main class is `S3270Emulator`, which uses an instance of `S3270Session` to communicate with the terminal.
 
+## Version
+
+ - 1.0.2
+
 ## Key Features
 
 - Retrieve the screen in ASCII format
