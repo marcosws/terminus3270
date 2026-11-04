@@ -7,8 +7,9 @@ import io.github.marcosws.terminus3270.components.ScreenContent;
 import io.github.marcosws.terminus3270.enums.EmulatorMode;
 import io.github.marcosws.terminus3270.exceptions.SessionAbortedException;
 import io.github.marcosws.terminus3270.interfaces.IScreenContent;
+import io.github.marcosws.terminus3270.viewer.ui.UIComponents;
 
-public abstract class ManagerViewerContent implements IScreenContent {
+public abstract class ManagerViewerContent extends UIComponents implements IScreenContent {
 	
 	private static final Logger logger = LoggerFactory.getLogger(ManagerViewerContent.class);
 	private final Object pauseLock = new Object();
@@ -179,7 +180,7 @@ public abstract class ManagerViewerContent implements IScreenContent {
 	
 	protected void setStatus(String message) {
 	    if (terminalViewer != null) {
-	        terminalViewer.setStatus(message);
+	        terminalViewer.getStatusBar().setStatus(message);
 	    }
 	}
 	

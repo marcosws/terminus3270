@@ -105,7 +105,7 @@ emulator.pauseScript(); // It only works in EmulatorMode.VIEWER_MODE.
 | `getText(CursorPosition position, int sizeText)` | Extracts a specified number of characters from the screen, starting at the supplied position. |
 | `getTextByField(String field, int sizeText)` | Finds a field by its label and extracts text starting at the calculated field position. |
 | `getTextBeforeField(String field, int sizeText)` | Extracts text positioned before a field identified by its label. |
-| `getTextBottonField(String field, int sizeText, int offsetRow)` | Extracts text below a field identified by its label, using the specified row offset. The method name is `getTextBottonField` in the current API. |
+| `getTextBottomField(String field, int sizeText, int offsetRow)` | Extracts text below a field identified by its label, using the specified row offset. The method name is `getTextBottomField` in the current API. |
 | `getTextTopField(String field, int sizeText, int offsetRow)` | Extracts text above a field identified by its label, using the specified row offset. |
 
 ### Text Entry and Cursor Navigation

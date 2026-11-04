@@ -29,10 +29,10 @@ public class EmulatorIntegrationTestLocal {
 		
 		System.out.println(emulator.asciiScreen());
 		emulator.pauseScript();
-		emulator.sendTextByField("Userid:", "TESTE");
+		emulator.sendTextByLabel("Userid:", "TESTE");
 		emulator.tab();
 		emulator.pauseScript();
-		emulator.sendTextByField("Password:", "1234");
+		emulator.sendTextByLabel("Password:", "1234");
 		System.out.println(emulator.asciiScreen());
 		emulator.pauseScript();
 		emulator.enter();
@@ -40,7 +40,7 @@ public class EmulatorIntegrationTestLocal {
 		emulator.pauseScript();
 		
 		String option1 = emulator.getTextBeforeField("- SALDO", 3);
-		emulator.sendTextByField("Opcao ==>", option1.trim());
+		emulator.sendTextByLabel("Opcao ==>", option1.trim());
 		emulator.pauseScript();
 		emulator.enter();
 		
@@ -55,7 +55,7 @@ public class EmulatorIntegrationTestLocal {
 		emulator.pauseScript();
 		
 		String option2 = emulator.getTextBeforeField("- CADASTRO", 3);
-		emulator.sendTextByField("Opcao ==>", option2.trim());
+		emulator.sendTextByLabel("Opcao ==>", option2.trim());
 		
 		System.out.println(emulator.asciiScreen());
 		emulator.pauseScript();

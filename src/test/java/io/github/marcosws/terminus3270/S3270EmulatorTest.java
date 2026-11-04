@@ -133,7 +133,7 @@ class S3270EmulatorTest {
 		when(mockSession.sendCommand(startsWith("MoveCursor"))).thenReturn("ok\n");
 		when(mockSession.sendCommand(startsWith("String("))).thenReturn("ok\n");
 
-		String result = emulator.sendTextByField("Username:", "admin");
+		String result = emulator.sendTextByLabel("Username:", "admin");
 
 		assertNotNull(result);
 		verify(mockSession, times(4)).sendCommand("Ascii()");
@@ -149,7 +149,7 @@ class S3270EmulatorTest {
 		
 		S3270EmulatorException exception = assertThrows(
 			S3270EmulatorException.class,
-			() -> emulator.sendTextByField("Username:", "admin")
+			() -> emulator.sendTextByLabel("Username:", "admin")
 		);
 		
 		assertTrue(exception.getMessage().contains("Username:"));
@@ -164,7 +164,7 @@ class S3270EmulatorTest {
 		when(mockSession.sendCommand(startsWith("MoveCursor"))).thenReturn("ok\n");
 		when(mockSession.sendCommand(startsWith("String("))).thenReturn("ok\n");
 		
-		String result = emulator.sendTextByField("Username:", "admin", 1, 5);
+		String result = emulator.sendTextByLabel("Username:", "admin", 1, 5);
 		
 		assertNotNull(result);
 		verify(mockSession, atLeastOnce()).sendCommand(anyString());
@@ -465,7 +465,7 @@ class S3270EmulatorTest {
 	
 	@Test
 	@DisplayName("getTextBottonField should retrieve value below the field with correct offset")
-	void testGetTextBottonField() {
+	void testGetTextBottomField() {
 		String gridScreen = String.join("\n",
 			"Numero    | Nome       | Credencial  ",
 			"--------------------------------------",
@@ -478,39 +478,39 @@ class S3270EmulatorTest {
 			.thenReturn(gridScreen);
 
 		// offset = 1 (Marcos)
-		String value1 = emulator.getTextBottonField("Nome", 8, 2).trim();
+		String value1 = emulator.getTextBelowField("Nome", 8, 2).trim();
 		assertEquals("Marcos", value1);
 
 		// offset = 2 (Roger)
-		String value2 = emulator.getTextBottonField("Nome", 8, 3).trim();
+		String value2 = emulator.getTextBelowField("Nome", 8, 3).trim();
 		assertEquals("Roger", value2);
 
 		// offset = 3 (Pedro)
-		String value3 = emulator.getTextBottonField("Nome", 8, 4).trim();
+		String value3 = emulator.getTextBelowField("Nome", 8, 4).trim();
 		assertEquals("Pedro", value3);
 		
 		// offset = 1 (4577)
-		String value4 = emulator.getTextBottonField("Numero", 10, 4).trim();
+		String value4 = emulator.getTextBelowField("Numero", 10, 4).trim();
 		assertEquals("4577", value4);
 
 		// offset = 2 (3455)
-		String value5 = emulator.getTextBottonField("Numero", 10, 3).trim();
+		String value5 = emulator.getTextBelowField("Numero", 10, 3).trim();
 		assertEquals("3455", value5);
 
 		// offset = 3 (2345)
-		String value6 = emulator.getTextBottonField("Numero", 10, 2).trim();
+		String value6 = emulator.getTextBelowField("Numero", 10, 2).trim();
 		assertEquals("2345", value6);
 		
 		// offset = 1 (GF90)
-		String value7 = emulator.getTextBottonField("Credencial", 10, 4).trim();
+		String value7 = emulator.getTextBelowField("Credencial", 10, 4).trim();
 		assertEquals("GF90", value7);
 
 		// offset = 2 (BF32)
-		String value8 = emulator.getTextBottonField("Credencial", 10, 3).trim();
+		String value8 = emulator.getTextBelowField("Credencial", 10, 3).trim();
 		assertEquals("BF32", value8);
 
 		// offset = 3 (AB34)
-		String value9 = emulator.getTextBottonField("Credencial", 10, 2).trim();
+		String value9 = emulator.getTextBelowField("Credencial", 10, 2).trim();
 		assertEquals("AB34", value9);
 	}
 
@@ -530,7 +530,7 @@ class S3270EmulatorTest {
 
 		S3270EmulatorException exception = assertThrows(
 			S3270EmulatorException.class,
-			() -> emulator.getTextBottonField("Inexistente", 8, 1)
+			() -> emulator.getTextBelowField("Inexistente", 8, 1)
 		);
 		assertTrue(exception.getMessage().contains("Inexistente"));
 	}
@@ -550,39 +550,39 @@ class S3270EmulatorTest {
 			.thenReturn(gridScreen);
 
 		// offset = 1 (Pedro)
-		String value1 = emulator.getTextTopField("Nome", 10, 2).trim();
+		String value1 = emulator.getTextAboveField("Nome", 10, 2).trim();
 		assertEquals("Pedro", value1);
 
 		// offset = 2 (Roger)
-		String value2 = emulator.getTextTopField("Nome", 10, 3).trim();
+		String value2 = emulator.getTextAboveField("Nome", 10, 3).trim();
 		assertEquals("Roger", value2);
 
 		// offset = 3 (Marcos)
-		String value3 = emulator.getTextTopField("Nome", 10, 4).trim();
+		String value3 = emulator.getTextAboveField("Nome", 10, 4).trim();
 		assertEquals("Marcos", value3);
 		
 		// offset = 1 (4577)
-		String value4 = emulator.getTextTopField("Numero", 10, 2).trim();
+		String value4 = emulator.getTextAboveField("Numero", 10, 2).trim();
 		assertEquals("4577", value4);
 
 		// offset = 2 (3455)
-		String value5 = emulator.getTextTopField("Numero", 10, 3).trim();
+		String value5 = emulator.getTextAboveField("Numero", 10, 3).trim();
 		assertEquals("3455", value5);
 
 		// offset = 3 (2345)
-		String value6 = emulator.getTextTopField("Numero", 10, 4).trim();
+		String value6 = emulator.getTextAboveField("Numero", 10, 4).trim();
 		assertEquals("2345", value6);
 		
 		// offset = 1 (GF90)
-		String value7 = emulator.getTextTopField("Credencial", 10, 2).trim();
+		String value7 = emulator.getTextAboveField("Credencial", 10, 2).trim();
 		assertEquals("GF90", value7);
 
 		// offset = 2 (BF32)
-		String value8 = emulator.getTextTopField("Credencial", 10, 3).trim();
+		String value8 = emulator.getTextAboveField("Credencial", 10, 3).trim();
 		assertEquals("BF32", value8);
 
 		// offset = 3 (AB34)
-		String value9 = emulator.getTextTopField("Credencial", 10, 4).trim();
+		String value9 = emulator.getTextAboveField("Credencial", 10, 4).trim();
 		assertEquals("AB34", value9);
 		
 		
@@ -604,7 +604,7 @@ class S3270EmulatorTest {
 
 		S3270EmulatorException exception = assertThrows(
 			S3270EmulatorException.class,
-			() -> emulator.getTextTopField("Inexistente", 8, 1)
+			() -> emulator.getTextAboveField("Inexistente", 8, 1)
 		);
 		assertTrue(exception.getMessage().contains("Inexistente"));
 	}
@@ -624,11 +624,11 @@ class S3270EmulatorTest {
 			.thenReturn(gridScreen);
 
 		try {
-			emulator.getTextBottonField("Inexistente", 10, 2);
+			emulator.getTextBelowField("Inexistente", 10, 2);
 		}
 		catch (S3270EmulatorException e) {
 			assertTrue(e.getMessage().contains("Inexistente"));
-			assertNotNull(emulator.getTextBottonField("Nome", 10, 2)); 
+			assertNotNull(emulator.getTextBelowField("Nome", 10, 2)); 
 		}
 		
 		
@@ -649,11 +649,11 @@ class S3270EmulatorTest {
 			.thenReturn(gridScreen);
 
 		try {
-			emulator.getTextTopField("Inexistente", 10, 2);
+			emulator.getTextAboveField("Inexistente", 10, 2);
 		}
 		catch (S3270EmulatorException e) {
 			assertTrue(e.getMessage().contains("Inexistente"));
-			assertNotNull(emulator.getTextTopField("Nome", 10, 2)); 
+			assertNotNull(emulator.getTextAboveField("Nome", 10, 2)); 
 		}
 	}
 	
@@ -674,8 +674,8 @@ class S3270EmulatorTest {
 		
 		// Execute
 		String screen = emulator.asciiScreen();
-		emulator.sendTextByField("Username:", "testuser");
-		emulator.sendTextByField("Password:", "testpass");
+		emulator.sendTextByLabel("Username:", "testuser");
+		emulator.sendTextByLabel("Password:", "testpass");
 		emulator.enter();
 		
 		// Verify
